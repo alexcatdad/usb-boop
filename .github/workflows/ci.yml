@@ -32,16 +32,9 @@ jobs:
 
       - name: Build and test
         run: |
-          set -o pipefail
           xcodebuild \
             -project usb-boop.xcodeproj \
             -scheme usb-boop \
             -destination 'platform=macOS,arch=arm64' \
             CODE_SIGNING_ALLOWED=NO \
-            test 2>&1 | tee build.log || STATUS=$?
-          if [[ -n "${STATUS:-}" ]]; then
-            grep ' error:' build.log | head -30 | while IFS= read -r line; do
-              echo "::error::${line}"
-            done
-            exit "$STATUS"
-          fi
+            test
