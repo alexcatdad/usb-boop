@@ -5,7 +5,7 @@ import USBBoopKit
 
 @MainActor
 @Observable
-final class AppModel {
+final class AppModel: @unchecked Sendable {
     var currentDevices: [USBDevice] = []
     var latestConnectedDevice: USBDevice?
     var notificationsEnabled: Bool {
