@@ -32,9 +32,15 @@ jobs:
 
       - name: Build and test
         run: |
+          set -o pipefail
           xcodebuild \
             -project usb-boop.xcodeproj \
             -scheme usb-boop \
             -destination 'platform=macOS,arch=arm64' \
             CODE_SIGNING_ALLOWED=NO \
-            test
+            test 2>&1 | tee build.log || {
+              echo "::group::Build errors"
+              grep -A2 'error:' build.log || true
+              echo "::endgroup::"
+              exit 65
+            }
