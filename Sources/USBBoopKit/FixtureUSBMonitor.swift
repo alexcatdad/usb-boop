@@ -2,8 +2,8 @@ import Foundation
 
 @MainActor
 public final class FixtureUSBMonitor: USBMonitoring {
-    public var onDevicesChanged: (([USBDevice]) -> Void)?
-    public var onDeviceAttached: ((USBDevice) -> Void)?
+    public var onDevicesChanged: (@MainActor ([USBDevice]) -> Void)?
+    public var onDeviceAttached: (@MainActor (USBDevice) -> Void)?
 
     private let devices: [USBDevice]
 

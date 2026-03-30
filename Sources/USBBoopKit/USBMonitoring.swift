@@ -2,8 +2,8 @@ import Foundation
 
 @MainActor
 public protocol USBMonitoring: AnyObject {
-    var onDevicesChanged: (([USBDevice]) -> Void)? { get set }
-    var onDeviceAttached: ((USBDevice) -> Void)? { get set }
+    var onDevicesChanged: (@MainActor ([USBDevice]) -> Void)? { get set }
+    var onDeviceAttached: (@MainActor (USBDevice) -> Void)? { get set }
 
     func start()
     func stop()

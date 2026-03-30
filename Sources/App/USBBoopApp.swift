@@ -7,9 +7,7 @@ struct USBBoopApp: App {
     init() {
         let model = AppModel()
         _model = State(initialValue: model)
-        DispatchQueue.main.async {
-            model.start()
-        }
+        model.start()
     }
 
     var body: some Scene {
