@@ -1,0 +1,42 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="112" y1="96" x2="912" y2="928" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8EFE1"/>
+      <stop offset="1" stop-color="#F0CFA5"/>
+    </linearGradient>
+    <linearGradient id="usb" x1="512" y1="180" x2="512" y2="780" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0E6B73"/>
+      <stop offset="1" stop-color="#0A4348"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="320" y1="420" x2="704" y2="620" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9FE4DF" stop-opacity="0.65"/>
+      <stop offset="1" stop-color="#9FE4DF" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="90" y="74" width="844" height="876" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="28" stdDeviation="34" flood-color="#7A5332" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect x="96" y="96" width="832" height="832" rx="184" fill="url(#bg)"/>
+  <rect x="96" y="96" width="832" height="832" rx="184" stroke="#E0B888" stroke-width="16"/>
+
+  <g filter="url(#shadow)">
+    <path d="M512 184L578 276H533V424H491V276H446L512 184Z" fill="url(#usb)"/>
+    <path d="M360 334L428 350L401 390L486 476L456 506L372 421L345 462L360 334Z" fill="url(#usb)"/>
+    <path d="M664 334L679 462L652 421L568 506L538 476L623 390L596 350L664 334Z" fill="url(#usb)"/>
+    <path d="M512 424C568 424 614 470 614 526V650C614 706 568 752 512 752C456 752 410 706 410 650V526C410 470 456 424 512 424Z" fill="url(#usb)"/>
+    <rect x="440" y="742" width="144" height="82" rx="34" fill="url(#usb)"/>
+    <rect x="472" y="232" width="24" height="80" rx="12" fill="#C4F4F1"/>
+    <rect x="528" y="232" width="24" height="80" rx="12" fill="#C4F4F1"/>
+  </g>
+
+  <ellipse cx="512" cy="548" rx="248" ry="164" fill="url(#glow)"/>
+
+  <g>
+    <rect x="290" y="448" width="180" height="132" rx="58" stroke="#1E1C1A" stroke-width="28" fill="#FFF7ED" fill-opacity="0.42"/>
+    <rect x="554" y="448" width="180" height="132" rx="58" stroke="#1E1C1A" stroke-width="28" fill="#FFF7ED" fill-opacity="0.42"/>
+    <rect x="468" y="498" width="92" height="24" rx="12" fill="#1E1C1A"/>
+    <path d="M280 524C312 500 344 490 382 490" stroke="#1E1C1A" stroke-width="28" stroke-linecap="round"/>
+    <path d="M744 524C712 500 680 490 642 490" stroke="#1E1C1A" stroke-width="28" stroke-linecap="round"/>
+  </g>
+</svg>

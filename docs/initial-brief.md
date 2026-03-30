@@ -43,13 +43,38 @@ The core value is speed and trust:
 
 These are the assumptions I would use for the first scaffold unless you want to steer them differently:
 
-- Minimum target: recent supported macOS version on Apple Silicon first
-- Intel support is nice-to-have, not a launch blocker
+- Minimum target: macOS 14+
+- Apple Silicon only
 - Unsandboxed direct distribution, not a Mac App Store build
 - Attach notifications enabled by default
 - Detach notifications disabled by default
 - Advanced inspector stays inside the same app, not a separate companion tool
 - Cable Test Mode lands after the first functional MVP
+- No recent-history persistence in MVP
+- No launch-at-login in MVP
+- App name remains `usb-boop`
+
+## Locked Decisions
+
+These decisions were confirmed during scaffolding:
+
+- macOS 14+ minimum target
+- Apple Silicon only
+- direct distribution outside the Mac App Store
+- no Developer ID signing or notarization planned
+- Homebrew installation will use an existing custom tap
+- MVP is connect notifications plus a companion menu showing currently connected devices
+- no persistent history in MVP
+- no launch-at-login in MVP
+
+## Notification Reality Check
+
+The app can send local macOS notifications, but it cannot fully control whether the system presents them as transient banners or persistent alerts. Notification Center owns that user-facing style.
+
+The practical MVP answer is:
+
+- usb-boop sends the connect notification
+- the app keeps the latest result visible in the menu companion when the user enables the pinned-result toggle
 
 ## Constraints That Matter Early
 
@@ -65,20 +90,12 @@ If the app is unsigned, installation is still possible but rougher for end users
 
 We should expect some devices, hubs, and composite peripherals to expose incomplete or noisy metadata. The product should prefer "speed unavailable" over overclaiming.
 
-## Clarifications Before App Scaffolding
+## Remaining Clarifications
 
-These are the questions that will most influence the first project scaffold:
+These are the only decisions still useful before release automation is finished:
 
-1. What minimum macOS version do you want to support for v1?
-2. Do you want to target Apple Silicon only for the first release, or ship universal binaries from day one?
-3. Are you okay with direct distribution outside the Mac App Store, including an unsandboxed app if the USB APIs need it?
-4. Do you want us to plan for Developer ID signing and notarization now, or leave that for a later release pass?
-5. For Homebrew, is a custom tap such as `alexcatdad/tap` acceptable for the first public release?
-6. Should the first scaffold include only connect notifications and recent history, or do you want Cable Test Mode represented in the initial architecture now?
-7. Do you want recent event history to persist across launches in v1, or can it be in-memory until the first functional milestone lands?
-8. Should the app start at login in the MVP, or can that wait until after basic detection is working?
-9. How much raw debug detail do you want visible in v1 when speed detection is ambiguous?
-10. Do you want us to commit to a specific app name now, or keep `usb-boop` as the public package and repository name while the menu bar title remains flexible?
+1. What is the exact Homebrew tap repository we should target for release formula or cask updates?
+2. How much raw debug detail should the first visible inspector surface when speed detection is ambiguous?
 
 ## Proposed Scaffold Sequence
 
@@ -86,9 +103,9 @@ Once the answers above are settled, the scaffold should probably happen in this 
 
 1. Xcode-based native macOS app project
 2. Menu bar shell with settings window
-3. USB event monitoring service with mocked fallback fixtures for development
-4. Notification pipeline and recent-history model
-5. Local persistence and preferences
+3. USB event monitoring service with fixture mode for development
+4. Notification pipeline and current-device model
+5. Preferences for notification behavior
 6. GitHub Actions CI for build and test
 7. Release packaging for Homebrew cask installation
 

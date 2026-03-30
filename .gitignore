@@ -14,6 +14,10 @@ build/
 .build/
 Package.resolved
 
+# Local release artifacts
+dist/
+dist-*/
+
 # Fastlane
 fastlane/report.xml
 fastlane/Preview.html
