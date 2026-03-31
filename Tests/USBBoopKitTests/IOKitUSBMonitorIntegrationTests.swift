@@ -7,11 +7,9 @@ final class IOKitUSBMonitorIntegrationTests: XCTestCase {
     func test_startAndStop_lifecycle() async throws {
         let monitor = IOKitUSBMonitor()
         var snapshotCount = 0
-        var receivedDevices: [USBDevice] = []
 
-        monitor.onDevicesChanged = { devices in
+        monitor.onDevicesChanged = { _ in
             snapshotCount += 1
-            receivedDevices = devices
         }
 
         monitor.start()
