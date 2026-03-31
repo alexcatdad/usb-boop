@@ -17,4 +17,32 @@ final class USBConnectionSpeedTests: XCTestCase {
         XCTAssertEqual(USBConnectionSpeed.usb3Gen1.displayLabel, "5 Gbps")
         XCTAssertEqual(USBConnectionSpeed.usb3Gen2.displayLabel, "10 Gbps")
     }
+
+    func testAllDisplayLabelsAreNonEmpty() {
+        for speed in USBConnectionSpeed.allCases {
+            XCTAssertFalse(speed.displayLabel.isEmpty, "\(speed) should have a display label")
+        }
+    }
+
+    func testAllTechnicalLabelsExceptUnknown() {
+        for speed in USBConnectionSpeed.allCases {
+            if speed == .unknown {
+                XCTAssertNil(speed.technicalLabel, "unknown should have nil technical label")
+            } else {
+                XCTAssertNotNil(speed.technicalLabel, "\(speed) should have a technical label")
+            }
+        }
+    }
+
+func testRegistryValueNilMapsToUnknown() {
+        XCTAssertEqual(USBConnectionSpeed(registryValue: nil), .unknown)
+    }
+
+    func testRegistryValueOtherMapsToOther() {
+        XCTAssertEqual(USBConnectionSpeed(registryValue: 7), .other)
+    }
+
+    func testRegistryValueZeroMapsToUnknown() {
+        XCTAssertEqual(USBConnectionSpeed(registryValue: 0), .unknown)
+    }
 }

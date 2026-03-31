@@ -64,6 +64,17 @@
                ReferencedContainer = "container:usb-boop.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "EBA94FCE58E6BE478AF16DD6"
+               BuildableName = "USBBoopAppTests.xctest"
+               BlueprintName = "USBBoopAppTests"
+               ReferencedContainer = "container:usb-boop.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <CommandLineArguments>
       </CommandLineArguments>

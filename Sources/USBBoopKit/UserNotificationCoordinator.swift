@@ -1,23 +1,24 @@
 import Foundation
+import OSLog
 @preconcurrency import UserNotifications
 
-public final class UserNotificationCoordinator: @unchecked Sendable {
-    public enum AuthorizationState: Sendable {
+@MainActor
+public final class UserNotificationCoordinator {
+    public enum AuthorizationState: Sendable, Equatable {
         case notDetermined
         case denied
         case authorized
     }
 
-    private let centerProvider: () -> UNUserNotificationCenter
+    private let center: any NotificationCenterProtocol
 
-    public init(centerProvider: @escaping () -> UNUserNotificationCenter = { .current() }) {
-        self.centerProvider = centerProvider
+    public init(center: any NotificationCenterProtocol = UNUserNotificationCenter.current()) {
+        self.center = center
     }
 
     public func requestAuthorizationIfNeeded() async -> AuthorizationState {
-        let center = centerProvider()
-        let settings = await center.notificationSettings()
-        switch settings.authorizationStatus {
+        let status = await center.authorizationStatus()
+        switch status {
         case .authorized, .ephemeral, .provisional:
             return .authorized
         case .denied:
@@ -35,9 +36,8 @@ public final class UserNotificationCoordinator: @unchecked Sendable {
     }
 
     public func refreshAuthorizationState() async -> AuthorizationState {
-        let center = centerProvider()
-        let settings = await center.notificationSettings()
-        switch settings.authorizationStatus {
+        let status = await center.authorizationStatus()
+        switch status {
         case .authorized, .ephemeral, .provisional:
             return .authorized
         case .denied:
@@ -50,7 +50,6 @@ public final class UserNotificationCoordinator: @unchecked Sendable {
     }
 
     public func sendConnectionNotification(for device: USBDevice) {
-        let center = centerProvider()
         let content = UNMutableNotificationContent()
         content.title = "USB Connected"
         content.body = device.notificationBody
@@ -67,6 +66,12 @@ public final class UserNotificationCoordinator: @unchecked Sendable {
             trigger: nil
         )
 
-        center.add(request)
+        Task {
+            do {
+                try await center.add(request)
+            } catch {
+                USBBoopLog.appModel.error("Failed to deliver notification: \(error.localizedDescription, privacy: .public)")
+            }
+        }
     }
 }

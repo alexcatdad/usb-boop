@@ -93,7 +93,7 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
                 continue
             }
 
-            refreshed[device.id] = merge(device, withKnownDevice: knownDevices[device.id])
+            refreshed[device.id] = USBDeviceMerger.merge(device, withKnownDevice: knownDevices[device.id])
         }
 
         knownDevices = refreshed
@@ -159,7 +159,7 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
                 continue
             }
 
-            let mergedDevice = merge(device, withKnownDevice: knownDevices[device.id])
+            let mergedDevice = USBDeviceMerger.merge(device, withKnownDevice: knownDevices[device.id])
             let wasKnown = knownDevices[device.id] != nil
             knownDevices[mergedDevice.id] = mergedDevice
             USBBoopLog.usbMonitor.notice(
@@ -195,34 +195,8 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
         }
     }
 
-    private func merge(_ device: USBDevice, withKnownDevice existing: USBDevice?) -> USBDevice {
-        guard let existing else {
-            return device
-        }
-
-        return USBDevice(
-            id: device.id,
-            name: device.name,
-            manufacturer: device.manufacturer ?? existing.manufacturer,
-            vendorID: device.vendorID ?? existing.vendorID,
-            productID: device.productID ?? existing.productID,
-            serialNumber: device.serialNumber ?? existing.serialNumber,
-            locationID: device.locationID ?? existing.locationID,
-            speed: device.speed == .unknown ? existing.speed : device.speed,
-            isHub: device.isHub,
-            connectedAt: existing.connectedAt
-        )
-    }
-
     private func publishSnapshot() {
-        let devices = knownDevices.values.sorted {
-            if $0.connectedAt == $1.connectedAt {
-                return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-            }
-
-            return $0.connectedAt > $1.connectedAt
-        }
-
+        let devices = USBDeviceMerger.sorted(knownDevices.values)
         USBBoopLog.usbMonitor.debug("Publishing \(devices.count) visible USB devices to the app model")
         onDevicesChanged?(devices)
     }
@@ -250,15 +224,46 @@ private func usbTerminatedCallback(refCon: UnsafeMutableRawPointer?, iterator: i
     }
 }
 
-private struct USBRegistryDeviceReader {
+// MARK: - USBDeviceMerger
+
+enum USBDeviceMerger {
+    static func merge(_ device: USBDevice, withKnownDevice existing: USBDevice?) -> USBDevice {
+        guard let existing else { return device }
+        return USBDevice(
+            id: device.id,
+            name: device.name,
+            manufacturer: device.manufacturer ?? existing.manufacturer,
+            vendorID: device.vendorID ?? existing.vendorID,
+            productID: device.productID ?? existing.productID,
+            serialNumber: device.serialNumber ?? existing.serialNumber,
+            locationID: device.locationID ?? existing.locationID,
+            speed: device.speed == .unknown ? existing.speed : device.speed,
+            isHub: device.isHub,
+            connectedAt: existing.connectedAt
+        )
+    }
+
+    static func sorted(_ devices: some Collection<USBDevice>) -> [USBDevice] {
+        devices.sorted {
+            if $0.connectedAt == $1.connectedAt {
+                return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }
+            return $0.connectedAt > $1.connectedAt
+        }
+    }
+}
+
+// MARK: - USBRegistryDeviceReader
+
+struct USBRegistryDeviceReader {
     func makeDevice(from service: io_registry_entry_t) -> USBDevice? {
         guard let id = registryEntryID(for: service) else {
             return nil
         }
 
-        let productName = stringProperty(for: service, key: usbProductStringKey)
-        let vendorName = stringProperty(for: service, key: usbVendorStringKey)
-        let serialNumber = stringProperty(for: service, key: usbSerialNumberStringKey)
+        let productName = sanitize(stringProperty(for: service, key: usbProductStringKey))
+        let vendorName = sanitize(stringProperty(for: service, key: usbVendorStringKey))
+        let serialNumber = sanitize(stringProperty(for: service, key: usbSerialNumberStringKey))
         let vendorID = intProperty(for: service, key: usbVendorIDKey)
         let productID = intProperty(for: service, key: usbProductIDKey)
         let speed = USBConnectionSpeed(registryValue: intProperty(for: service, key: usbSpeedKey))
@@ -296,7 +301,33 @@ private struct USBRegistryDeviceReader {
         return entryID
     }
 
-    private func resolvedName(
+    func sanitize(_ raw: String?) -> String? {
+        guard let raw else { return nil }
+
+        let cleaned = raw.unicodeScalars.filter { scalar in
+            // Keep printable characters: letters, marks, numbers, punctuation, symbols, spaces
+            // Reject control characters (Cc), format characters (Cf), surrogates, etc.
+            switch scalar.properties.generalCategory {
+            case .control, .format, .surrogate, .privateUse, .unassigned:
+                return false
+            default:
+                return true
+            }
+        }
+
+        let result = String(String.UnicodeScalarView(cleaned))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !result.isEmpty else { return nil }
+
+        if result.count > 128 {
+            return String(result.prefix(128))
+        }
+
+        return result
+    }
+
+    func resolvedName(
         productName: String?,
         vendorName: String?,
         vendorID: Int?,

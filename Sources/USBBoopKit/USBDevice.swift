@@ -1,11 +1,12 @@
 import Foundation
 
-public struct USBDevice: Identifiable, Equatable, Sendable {
+public struct USBDevice: Identifiable, Equatable, Hashable, Sendable {
     public let id: UInt64
     public let name: String
     public let manufacturer: String?
     public let vendorID: Int?
     public let productID: Int?
+    /// Serial number from USB descriptor. Treat as sensitive — never log with .public privacy.
     public let serialNumber: String?
     public let locationID: UInt32?
     public let speed: USBConnectionSpeed

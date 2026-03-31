@@ -73,24 +73,4 @@ public enum USBConnectionSpeed: Int, CaseIterable, Codable, Sendable {
         }
     }
 
-    public var sortRank: Int {
-        switch self {
-        case .unknown:
-            return 0
-        case .usb1Low:
-            return 1
-        case .usb1Full:
-            return 2
-        case .usb2High:
-            return 3
-        case .usb3Gen1:
-            return 4
-        case .usb3Gen2:
-            return 5
-        case .usb3Gen2x2:
-            return 6
-        case .other:
-            return 7
-        }
-    }
 }

@@ -5,7 +5,7 @@ import USBBoopKit
 
 @MainActor
 @Observable
-final class AppModel: @unchecked Sendable {
+final class AppModel {
     var currentDevices: [USBDevice] = []
     var latestConnectedDevice: USBDevice?
     var notificationsEnabled: Bool {
@@ -24,6 +24,7 @@ final class AppModel: @unchecked Sendable {
     private let makeNotifier: @MainActor @Sendable () -> UserNotificationCoordinator
     private var notifier: UserNotificationCoordinator?
     private let defaults: UserDefaults
+    private var hasStarted = false
 
     static let notificationsEnabledKey = "notificationsEnabled"
     static let keepLatestResultPinnedKey = "keepLatestResultPinned"
@@ -55,6 +56,8 @@ final class AppModel: @unchecked Sendable {
     }
 
     func start() {
+        guard !hasStarted else { return }
+        hasStarted = true
         USBBoopLog.appModel.notice("App model starting; notificationsEnabled=\(self.notificationsEnabled) keepLatestResultPinned=\(self.keepLatestResultPinned)")
         notifier = makeNotifier()
         monitor.start()

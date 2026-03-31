@@ -55,6 +55,23 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
 
+  USBBoopAppTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Tests/USBBoopAppTests
+      - path: Sources/App
+        includes:
+          - "*.swift"
+        excludes:
+          - USBBoopApp.swift
+    dependencies:
+      - target: USBBoopKit
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+
 schemes:
   usb-boop:
     build:
@@ -64,3 +81,4 @@ schemes:
     test:
       targets:
         - USBBoopKitTests
+        - USBBoopAppTests
