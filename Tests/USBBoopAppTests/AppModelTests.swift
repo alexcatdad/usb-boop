@@ -17,7 +17,9 @@ final class AppTestMockCenter: NotificationCenterProtocol, @unchecked Sendable {
 @MainActor
 final class AppModelTests: XCTestCase {
 
-    private var testDefaults: UserDefaults!
+    // nonisolated(unsafe) so setUp/tearDown (which are nonisolated) can access it.
+    // All meaningful access happens from @MainActor test methods.
+    private nonisolated(unsafe) var testDefaults: UserDefaults!
 
     override func setUp() {
         super.setUp()
