@@ -19,6 +19,15 @@ final class AppModel {
         }
     }
     var notificationAuthorizationSummary = "Checking notification permission…"
+    var showHubs: Bool {
+        didSet {
+            defaults.set(showHubs, forKey: Self.showHubsKey)
+        }
+    }
+
+    var visibleDevices: [USBDevice] {
+        showHubs ? currentDevices : currentDevices.filter { !$0.isHub }
+    }
 
     private let monitor: any USBMonitoring
     private let makeNotifier: @MainActor @Sendable () -> UserNotificationCoordinator
@@ -28,6 +37,7 @@ final class AppModel {
 
     static let notificationsEnabledKey = "notificationsEnabled"
     static let keepLatestResultPinnedKey = "keepLatestResultPinned"
+    static let showHubsKey = "showHubs"
 
     init(
         monitor: any USBMonitoring = USBMonitorFactory.makeMonitor(),
@@ -39,6 +49,7 @@ final class AppModel {
         self.defaults = defaults
         self.notificationsEnabled = defaults.object(forKey: Self.notificationsEnabledKey) as? Bool ?? true
         self.keepLatestResultPinned = defaults.object(forKey: Self.keepLatestResultPinnedKey) as? Bool ?? true
+        self.showHubs = defaults.object(forKey: Self.showHubsKey) as? Bool ?? false
 
         bindMonitor()
     }

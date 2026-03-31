@@ -1,5 +1,5 @@
-import Observation
 import SwiftUI
+import USBBoopKit
 
 struct SettingsView: View {
     @Bindable var model: AppModel
@@ -7,27 +7,40 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Notifications") {
-                Toggle("Enable connect notifications", isOn: $model.notificationsEnabled)
-                Toggle("Keep latest result pinned in menu companion", isOn: $model.keepLatestResultPinned)
-
-                Text("macOS controls whether notifications are banners or persistent alerts. usb-boop can send the notification, but Notification Center owns the final presentation style.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                Toggle("Show notification when a device connects", isOn: $model.notificationsEnabled)
 
                 Text(model.notificationAuthorizationSummary)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
 
-            Section("Current MVP Scope") {
-                LabeledContent("Platform", value: "macOS 14+")
-                LabeledContent("Architecture", value: "Apple Silicon")
-                LabeledContent("Distribution", value: "Direct + Homebrew")
-                LabeledContent("Launch at Login", value: "Planned later")
+            Section("Display") {
+                Toggle("Pin latest result in menu", isOn: $model.keepLatestResultPinned)
+
+                Toggle("Show USB hubs in device list", isOn: $model.showHubs)
+
+                Text("Internal hubs appear on most Macs. Hiding them keeps the list focused on the devices you plugged in.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("About") {
+                LabeledContent("Version", value: Self.appVersion)
+
+                Link("View on GitHub", destination: URL(string: "https://github.com/alexcatdad/usb-boop")!)
+
+                Text("usb-boop is free and open source under the MIT License.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460)
-        .padding(20)
+        .frame(width: 460, height: 380)
+    }
+
+    private static var appVersion: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
+        return "\(version) (\(build))"
     }
 }
