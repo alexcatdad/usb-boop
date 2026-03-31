@@ -1,4 +1,4 @@
-import UserNotifications
+@preconcurrency import UserNotifications
 
 /// Protocol wrapping UNUserNotificationCenter for testability.
 @MainActor
@@ -8,7 +8,7 @@ public protocol NotificationCenterProtocol {
     func add(_ request: UNNotificationRequest) async throws
 }
 
-extension UNUserNotificationCenter: NotificationCenterProtocol {
+extension UNUserNotificationCenter: @preconcurrency NotificationCenterProtocol {
     public func authorizationStatus() async -> UNAuthorizationStatus {
         await notificationSettings().authorizationStatus
     }
