@@ -19,13 +19,28 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
 
     private let reader = USBRegistryDeviceReader()
     private var knownDevices: [UInt64: USBDevice] = [:]
-    private var notificationPort: IONotificationPortRef?
-    private var matchedIterator: io_iterator_t = 0
-    private var terminatedIterator: io_iterator_t = 0
+    // nonisolated(unsafe) because these C/CF resources must be accessible from deinit,
+    // which is nonisolated in Swift 6. All mutations happen on MainActor; deinit is a
+    // last-resort safety net.
+    private nonisolated(unsafe) var notificationPort: IONotificationPortRef?
+    private nonisolated(unsafe) var runLoopSource: CFRunLoopSource?
+    private nonisolated(unsafe) var matchedIterator: io_iterator_t = 0
+    private nonisolated(unsafe) var terminatedIterator: io_iterator_t = 0
     private var didPrimeAttachedIterator = false
     private var started = false
 
     public init() {}
+
+    deinit {
+        if matchedIterator != 0 { IOObjectRelease(matchedIterator) }
+        if terminatedIterator != 0 { IOObjectRelease(terminatedIterator) }
+        if let port = notificationPort {
+            if let source = runLoopSource {
+                CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .defaultMode)
+            }
+            IONotificationPortDestroy(port)
+        }
+    }
 
     public func start() {
         guard !started else {
@@ -44,8 +59,9 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
 
         self.notificationPort = notificationPort
 
-        if let runLoopSource = IONotificationPortGetRunLoopSource(notificationPort)?.takeUnretainedValue() {
-            CFRunLoopAddSource(CFRunLoopGetMain(), runLoopSource, .defaultMode)
+        if let source = IONotificationPortGetRunLoopSource(notificationPort)?.takeUnretainedValue() {
+            CFRunLoopAddSource(CFRunLoopGetMain(), source, .defaultMode)
+            self.runLoopSource = source
         }
 
         registerAttachNotifications()
@@ -66,8 +82,19 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
         }
 
         if let notificationPort {
+            if let source = runLoopSource {
+                CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .defaultMode)
+                self.runLoopSource = nil
+            }
             IONotificationPortDestroy(notificationPort)
             self.notificationPort = nil
+        }
+
+        // Balance the two passRetained calls from start() (one for matched, one for terminated).
+        if started {
+            Unmanaged.passUnretained(self).release()
+            Unmanaged.passUnretained(self).release()
+            started = false
         }
     }
 
@@ -111,7 +138,7 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
             kIOMatchedNotification,
             IOServiceMatching(usbHostDeviceClassName),
             usbMatchedCallback,
-            Unmanaged.passUnretained(self).toOpaque(),
+            Unmanaged.passRetained(self).toOpaque(),
             &matchedIterator
         )
 
@@ -136,7 +163,7 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
             kIOTerminatedNotification,
             IOServiceMatching(usbHostDeviceClassName),
             usbTerminatedCallback,
-            Unmanaged.passUnretained(self).toOpaque(),
+            Unmanaged.passRetained(self).toOpaque(),
             &terminatedIterator
         )
 
@@ -234,6 +261,9 @@ private func usbMatchedCallback(refCon: UnsafeMutableRawPointer?, iterator: io_i
     }
 
     let monitor = Unmanaged<IOKitUSBMonitor>.fromOpaque(refCon).takeUnretainedValue()
+    // Safety: MainActor.assumeIsolated is correct here because the IOKit notification port
+    // is registered on the main RunLoop via CFRunLoopAddSource(CFRunLoopGetMain(), ...),
+    // so this callback always fires on the main thread.
     MainActor.assumeIsolated {
         monitor.handleMatchedDevices(from: iterator)
     }
@@ -245,6 +275,9 @@ private func usbTerminatedCallback(refCon: UnsafeMutableRawPointer?, iterator: i
     }
 
     let monitor = Unmanaged<IOKitUSBMonitor>.fromOpaque(refCon).takeUnretainedValue()
+    // Safety: MainActor.assumeIsolated is correct here because the IOKit notification port
+    // is registered on the main RunLoop via CFRunLoopAddSource(CFRunLoopGetMain(), ...),
+    // so this callback always fires on the main thread.
     MainActor.assumeIsolated {
         monitor.handleTerminatedDevices(from: iterator)
     }
@@ -256,9 +289,9 @@ private struct USBRegistryDeviceReader {
             return nil
         }
 
-        let productName = stringProperty(for: service, key: usbProductStringKey)
-        let vendorName = stringProperty(for: service, key: usbVendorStringKey)
-        let serialNumber = stringProperty(for: service, key: usbSerialNumberStringKey)
+        let productName = sanitize(stringProperty(for: service, key: usbProductStringKey))
+        let vendorName = sanitize(stringProperty(for: service, key: usbVendorStringKey))
+        let serialNumber = sanitize(stringProperty(for: service, key: usbSerialNumberStringKey))
         let vendorID = intProperty(for: service, key: usbVendorIDKey)
         let productID = intProperty(for: service, key: usbProductIDKey)
         let speed = USBConnectionSpeed(registryValue: intProperty(for: service, key: usbSpeedKey))
@@ -339,5 +372,15 @@ private struct USBRegistryDeviceReader {
 
     private func property(for service: io_registry_entry_t, key: String) -> Any? {
         IORegistryEntryCreateCFProperty(service, key as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue()
+    }
+
+    /// Strip control characters and default-ignorable code points, truncate to 128 characters.
+    private func sanitize(_ string: String?) -> String? {
+        guard let string else { return nil }
+        let cleaned = string.unicodeScalars.filter {
+            !$0.properties.isDefaultIgnorableCodePoint && CharacterSet.controlCharacters.inverted.contains($0)
+        }
+        let result = String(String.UnicodeScalarView(cleaned))
+        return result.isEmpty ? nil : String(result.prefix(128))
     }
 }

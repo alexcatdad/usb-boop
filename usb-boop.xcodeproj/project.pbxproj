@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1657AB408A87D4E04A2EB65C /* USBDeviceTests+Extended.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D28556BD43CA4B771998DD9 /* USBDeviceTests+Extended.swift */; };
 		29D6735FB6F451657F9D3CB9 /* USBBoopLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 186DA8FB56C0ABE2C6D7838E /* USBBoopLog.swift */; };
 		4BCB673DE0BC796777D1895A /* USBDeviceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 139579B86BD5CA38D24EB2F1 /* USBDeviceTests.swift */; };
 		5237C13AE35F145CF3C302C9 /* USBBoopKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F87B1CD107B298956A80FC80 /* USBBoopKit.framework */; };
@@ -17,12 +18,15 @@
 		7DAD07B14BAF67843795FD02 /* USBDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACEDE44CD013FE33736D8FA /* USBDevice.swift */; };
 		8268505676007C9F08CE45EF /* USBBoopKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F87B1CD107B298956A80FC80 /* USBBoopKit.framework */; };
 		96E17E54097AC215E34C304A /* USBBoopKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = F87B1CD107B298956A80FC80 /* USBBoopKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		ABCBEF382C406E676C24AD15 /* FixtureUSBMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 459FDBB6D54D4D672318E318 /* FixtureUSBMonitorTests.swift */; };
 		B3C59796A7EE6E6409A30E22 /* USBMonitoring.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5DD2B7C3B0144D13BAC1DB9 /* USBMonitoring.swift */; };
 		BCB7D206B987D90958A14C86 /* MenuBarContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 217BE6D0074F0A91D5B68A11 /* MenuBarContentView.swift */; };
 		C476C7D7C6685AF2A5932E2C /* USBConnectionSpeedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F7D8BB051DC2DD7629174A3 /* USBConnectionSpeedTests.swift */; };
 		C4D6C9B889F85DE0F04109A2 /* FixtureUSBMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA659B96F66B77BF451E2D35 /* FixtureUSBMonitor.swift */; };
 		CD2209EFF5B8AB9451A9E538 /* IOKitUSBMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F601A747A518D1F7B427BAEB /* IOKitUSBMonitor.swift */; };
 		DAED32A514B3F0F424F5FADC /* UserNotificationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58427184DD4A1946D808EAC /* UserNotificationCoordinator.swift */; };
+		DDE27545FFB660B6DF8B1D74 /* USBConnectionSpeedAllCasesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E05734061B19989F189B9C6 /* USBConnectionSpeedAllCasesTests.swift */; };
+		EE41FB17BF015F27203CF2FF /* UserNotificationCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0224E2F7A5482196332BF6A /* UserNotificationCoordinatorTests.swift */; };
 		F088C5B13AA05B0EDE03A399 /* USBMonitorFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4959AB4C23A3CA76AFD3BAB1 /* USBMonitorFactory.swift */; };
 		F6680B2D163D3CF1E616C55B /* USBBoopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02ADFB3BE9477E416E8CF74D /* USBBoopApp.swift */; };
 		F7E52A50A56C454143CE3BEA /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1719836954D298A36455E2B /* AppModel.swift */; };
@@ -72,16 +76,21 @@
 
 /* Begin PBXFileReference section */
 		02ADFB3BE9477E416E8CF74D /* USBBoopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBBoopApp.swift; sourceTree = "<group>"; };
+		0D28556BD43CA4B771998DD9 /* USBDeviceTests+Extended.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "USBDeviceTests+Extended.swift"; sourceTree = "<group>"; };
 		139579B86BD5CA38D24EB2F1 /* USBDeviceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBDeviceTests.swift; sourceTree = "<group>"; };
 		186DA8FB56C0ABE2C6D7838E /* USBBoopLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBBoopLog.swift; sourceTree = "<group>"; };
 		217BE6D0074F0A91D5B68A11 /* MenuBarContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarContentView.swift; sourceTree = "<group>"; };
 		223112FFA4516088CB75EEC8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		2932CC7B4F6A3C42B8BFB76B /* USBBoopKitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = USBBoopKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		323C0969CBBFF407AC5DA022 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		459FDBB6D54D4D672318E318 /* FixtureUSBMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureUSBMonitorTests.swift; sourceTree = "<group>"; };
 		4959AB4C23A3CA76AFD3BAB1 /* USBMonitorFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBMonitorFactory.swift; sourceTree = "<group>"; };
+		4E05734061B19989F189B9C6 /* USBConnectionSpeedAllCasesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBConnectionSpeedAllCasesTests.swift; sourceTree = "<group>"; };
 		608FD5159EE45824AA6A00F0 /* usb-boop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "usb-boop.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7F7D8BB051DC2DD7629174A3 /* USBConnectionSpeedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBConnectionSpeedTests.swift; sourceTree = "<group>"; };
+		A0224E2F7A5482196332BF6A /* UserNotificationCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserNotificationCoordinatorTests.swift; sourceTree = "<group>"; };
 		A1719836954D298A36455E2B /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		A3ED22F1AF3F5664266A7401 /* usb-boop.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "usb-boop.entitlements"; sourceTree = "<group>"; };
 		AA659B96F66B77BF451E2D35 /* FixtureUSBMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureUSBMonitor.swift; sourceTree = "<group>"; };
 		BACEDE44CD013FE33736D8FA /* USBDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBDevice.swift; sourceTree = "<group>"; };
 		C58427184DD4A1946D808EAC /* UserNotificationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserNotificationCoordinator.swift; sourceTree = "<group>"; };
@@ -137,6 +146,7 @@
 				323C0969CBBFF407AC5DA022 /* Info.plist */,
 				217BE6D0074F0A91D5B68A11 /* MenuBarContentView.swift */,
 				FC633E1C5B5DA068B5503794 /* SettingsView.swift */,
+				A3ED22F1AF3F5664266A7401 /* usb-boop.entitlements */,
 				02ADFB3BE9477E416E8CF74D /* USBBoopApp.swift */,
 			);
 			path = App;
@@ -179,8 +189,12 @@
 		C849F4BC5B2B31E5E365F05B /* USBBoopKitTests */ = {
 			isa = PBXGroup;
 			children = (
+				459FDBB6D54D4D672318E318 /* FixtureUSBMonitorTests.swift */,
+				4E05734061B19989F189B9C6 /* USBConnectionSpeedAllCasesTests.swift */,
 				7F7D8BB051DC2DD7629174A3 /* USBConnectionSpeedTests.swift */,
 				139579B86BD5CA38D24EB2F1 /* USBDeviceTests.swift */,
+				0D28556BD43CA4B771998DD9 /* USBDeviceTests+Extended.swift */,
+				A0224E2F7A5482196332BF6A /* UserNotificationCoordinatorTests.swift */,
 			);
 			path = USBBoopKitTests;
 			sourceTree = "<group>";
@@ -320,8 +334,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ABCBEF382C406E676C24AD15 /* FixtureUSBMonitorTests.swift in Sources */,
+				DDE27545FFB660B6DF8B1D74 /* USBConnectionSpeedAllCasesTests.swift in Sources */,
 				C476C7D7C6685AF2A5932E2C /* USBConnectionSpeedTests.swift in Sources */,
+				1657AB408A87D4E04A2EB65C /* USBDeviceTests+Extended.swift in Sources */,
 				4BCB673DE0BC796777D1895A /* USBDeviceTests.swift in Sources */,
+				EE41FB17BF015F27203CF2FF /* UserNotificationCoordinatorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -509,8 +527,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "Sources/App/usb-boop.entitlements";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Sources/App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -545,8 +565,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "Sources/App/usb-boop.entitlements";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Sources/App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

@@ -1,16 +1,18 @@
 import Foundation
+import OSLog
 @preconcurrency import UserNotifications
 
-public final class UserNotificationCoordinator: @unchecked Sendable {
+@MainActor
+public final class UserNotificationCoordinator {
     public enum AuthorizationState: Sendable {
         case notDetermined
         case denied
         case authorized
     }
 
-    private let centerProvider: () -> UNUserNotificationCenter
+    private let centerProvider: @MainActor () -> UNUserNotificationCenter
 
-    public init(centerProvider: @escaping () -> UNUserNotificationCenter = { .current() }) {
+    public init(centerProvider: @escaping @MainActor () -> UNUserNotificationCenter = { .current() }) {
         self.centerProvider = centerProvider
     }
 
@@ -67,6 +69,12 @@ public final class UserNotificationCoordinator: @unchecked Sendable {
             trigger: nil
         )
 
-        center.add(request)
+        Task {
+            do {
+                try await center.add(request)
+            } catch {
+                USBBoopLog.appModel.error("Failed to deliver notification: \(error.localizedDescription, privacy: .public)")
+            }
+        }
     }
 }
