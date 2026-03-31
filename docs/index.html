@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>usb-boop — Know your USB speed instantly</title>
+  <meta name="description" content="A native macOS menu bar app that detects USB devices and shows their negotiated link speed instantly.">
+  <meta property="og:title" content="usb-boop">
+  <meta property="og:description" content="Know your USB speed instantly. A native macOS menu bar utility.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="icon.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'media',
+      theme: {
+        extend: {
+          colors: {
+            cream: { 50: '#FDFAF5', 100: '#F8EFE1', 200: '#F0CFA5' },
+            teal: { 500: '#0E6B73', 600: '#0A4348', 400: '#5CC4C9', 300: '#9FE4DF' },
+            amber: { 300: '#E0B888' },
+            ink: '#1E1C1A',
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', 'Helvetica Neue', 'sans-serif'],
+            mono: ['SF Mono', 'Menlo', 'Consolas', 'monospace'],
+          },
+        },
+      },
+    }
+  </script>
+</head>
+<body class="bg-cream-50 text-ink dark:bg-neutral-950 dark:text-neutral-100 antialiased">
+
+  <!-- Hero -->
+  <div class="max-w-2xl mx-auto px-6 pt-20 pb-16 text-center">
+    <img src="icon.png" alt="usb-boop icon" class="w-32 h-32 mx-auto rounded-[28px] shadow-lg mb-8">
+    <h1 class="text-5xl font-bold tracking-tight mb-3">usb-boop</h1>
+    <p class="text-xl text-neutral-500 dark:text-neutral-400 max-w-lg mx-auto mb-10">
+      Know your USB speed instantly. A tiny macOS menu bar utility that watches for device connections and shows the negotiated link speed.
+    </p>
+
+    <div class="flex gap-4 justify-center flex-wrap">
+      <a href="https://github.com/alexcatdad/usb-boop/releases/latest"
+         class="inline-flex items-center gap-2 px-7 py-3.5 bg-teal-500 text-white font-semibold rounded-xl hover:-translate-y-0.5 hover:shadow-lg transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3"/></svg>
+        Download
+      </a>
+      <a href="https://github.com/alexcatdad/usb-boop"
+         class="inline-flex items-center gap-2 px-7 py-3.5 bg-white dark:bg-neutral-800 border border-amber-300 dark:border-neutral-700 font-semibold rounded-xl hover:-translate-y-0.5 hover:shadow-lg transition">
+        View on GitHub
+      </a>
+    </div>
+
+    <div class="mt-10 mx-auto max-w-md bg-cream-100 dark:bg-neutral-900 border border-amber-300 dark:border-neutral-700 rounded-xl px-7 py-5 text-left font-mono text-sm leading-8">
+      <span class="text-neutral-400"># Install via Homebrew</span><br>
+      brew tap alexcatdad/tap<br>
+      brew install --cask alexcatdad/tap/usb-boop
+    </div>
+  </div>
+
+  <!-- Features -->
+  <section class="max-w-4xl mx-auto px-6 py-16">
+    <h2 class="text-3xl font-bold tracking-tight text-teal-600 dark:text-teal-400 mb-8">Features</h2>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div class="bg-white dark:bg-neutral-900 border border-cream-100 dark:border-neutral-800 rounded-2xl p-7">
+        <h3 class="font-semibold text-lg mb-2">Instant detection</h3>
+        <p class="text-neutral-500 dark:text-neutral-400 text-sm">IOKit event-driven monitoring detects USB connections the moment they happen. No polling.</p>
+      </div>
+      <div class="bg-white dark:bg-neutral-900 border border-cream-100 dark:border-neutral-800 rounded-2xl p-7">
+        <h3 class="font-semibold text-lg mb-2">Speed at a glance</h3>
+        <p class="text-neutral-500 dark:text-neutral-400 text-sm">See negotiated link speed immediately — from USB 1.x at 1.5 Mbps to USB 3.2 Gen 2x2 at 20 Gbps.</p>
+      </div>
+      <div class="bg-white dark:bg-neutral-900 border border-cream-100 dark:border-neutral-800 rounded-2xl p-7">
+        <h3 class="font-semibold text-lg mb-2">Native notifications</h3>
+        <p class="text-neutral-500 dark:text-neutral-400 text-sm">macOS notifications with device name, speed, and connection type. Toggle on or off.</p>
+      </div>
+      <div class="bg-white dark:bg-neutral-900 border border-cream-100 dark:border-neutral-800 rounded-2xl p-7">
+        <h3 class="font-semibold text-lg mb-2">Menu bar resident</h3>
+        <p class="text-neutral-500 dark:text-neutral-400 text-sm">Lives in the menu bar. No dock icon, no windows to manage. Click to see all connected devices.</p>
+      </div>
+      <div class="bg-white dark:bg-neutral-900 border border-cream-100 dark:border-neutral-800 rounded-2xl p-7">
+        <h3 class="font-semibold text-lg mb-2">Cable &amp; hub testing</h3>
+        <p class="text-neutral-500 dark:text-neutral-400 text-sm">Quickly verify if your cable or hub supports the speed you expect. Swap and compare in seconds.</p>
+      </div>
+      <div class="bg-white dark:bg-neutral-900 border border-cream-100 dark:border-neutral-800 rounded-2xl p-7">
+        <h3 class="font-semibold text-lg mb-2">Privacy first</h3>
+        <p class="text-neutral-500 dark:text-neutral-400 text-sm">Fully offline, local-only. No analytics, no network calls, no data leaves your Mac.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Speed table -->
+  <section class="max-w-4xl mx-auto px-6 py-16">
+    <h2 class="text-3xl font-bold tracking-tight text-teal-600 dark:text-teal-400 mb-8">Supported speeds</h2>
+    <div class="overflow-x-auto rounded-2xl border border-cream-100 dark:border-neutral-800">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b-2 border-amber-300 dark:border-neutral-700">
+            <th class="text-left px-6 py-3 font-semibold text-teal-600 dark:text-teal-400">Standard</th>
+            <th class="text-left px-6 py-3 font-semibold text-teal-600 dark:text-teal-400">Speed</th>
+            <th class="text-left px-6 py-3 font-semibold text-teal-600 dark:text-teal-400">Label</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-neutral-900">
+          <tr class="border-b border-cream-100 dark:border-neutral-800"><td class="px-6 py-3">USB 1.0</td><td class="px-6 py-3"><span class="bg-teal-500 text-white px-2.5 py-0.5 rounded-md font-mono font-semibold text-xs">1.5 Mbps</span></td><td class="px-6 py-3">Low Speed</td></tr>
+          <tr class="border-b border-cream-100 dark:border-neutral-800"><td class="px-6 py-3">USB 1.1</td><td class="px-6 py-3"><span class="bg-teal-500 text-white px-2.5 py-0.5 rounded-md font-mono font-semibold text-xs">12 Mbps</span></td><td class="px-6 py-3">Full Speed</td></tr>
+          <tr class="border-b border-cream-100 dark:border-neutral-800"><td class="px-6 py-3">USB 2.0</td><td class="px-6 py-3"><span class="bg-teal-500 text-white px-2.5 py-0.5 rounded-md font-mono font-semibold text-xs">480 Mbps</span></td><td class="px-6 py-3">High Speed</td></tr>
+          <tr class="border-b border-cream-100 dark:border-neutral-800"><td class="px-6 py-3">USB 3.0 / 3.1 Gen 1</td><td class="px-6 py-3"><span class="bg-teal-500 text-white px-2.5 py-0.5 rounded-md font-mono font-semibold text-xs">5 Gbps</span></td><td class="px-6 py-3">SuperSpeed</td></tr>
+          <tr class="border-b border-cream-100 dark:border-neutral-800"><td class="px-6 py-3">USB 3.1 Gen 2</td><td class="px-6 py-3"><span class="bg-teal-500 text-white px-2.5 py-0.5 rounded-md font-mono font-semibold text-xs">10 Gbps</span></td><td class="px-6 py-3">SuperSpeed+</td></tr>
+          <tr><td class="px-6 py-3">USB 3.2 Gen 2x2</td><td class="px-6 py-3"><span class="bg-teal-500 text-white px-2.5 py-0.5 rounded-md font-mono font-semibold text-xs">20 Gbps</span></td><td class="px-6 py-3">SuperSpeed 20G</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Requirements -->
+  <section class="max-w-4xl mx-auto px-6 py-16">
+    <h2 class="text-3xl font-bold tracking-tight text-teal-600 dark:text-teal-400 mb-8">Requirements</h2>
+    <div class="bg-white dark:bg-neutral-900 border border-cream-100 dark:border-neutral-800 rounded-2xl px-7 py-6 flex gap-10 flex-wrap">
+      <div>
+        <div class="text-xs uppercase tracking-wider text-neutral-400 mb-1">Platform</div>
+        <div class="font-semibold">macOS 14 Sonoma or later</div>
+      </div>
+      <div>
+        <div class="text-xs uppercase tracking-wider text-neutral-400 mb-1">Architecture</div>
+        <div class="font-semibold">Apple Silicon</div>
+      </div>
+      <div>
+        <div class="text-xs uppercase tracking-wider text-neutral-400 mb-1">Price</div>
+        <div class="font-semibold">Free &amp; open source</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="text-center px-6 py-10 border-t border-cream-100 dark:border-neutral-800 text-sm text-neutral-400">
+    Made by <a href="https://github.com/alexcatdad" class="text-teal-500 hover:underline">alexcatdad</a> &middot;
+    <a href="https://github.com/alexcatdad/usb-boop" class="text-teal-500 hover:underline">Source</a> &middot;
+    <a href="https://github.com/alexcatdad/usb-boop/releases" class="text-teal-500 hover:underline">Releases</a> &middot;
+    MIT License
+  </footer>
+
+</body>
+</html>
