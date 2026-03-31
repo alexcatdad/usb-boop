@@ -7,14 +7,12 @@ struct USBBoopApp: App {
     init() {
         let model = AppModel()
         _model = State(initialValue: model)
+        model.start()
     }
 
     var body: some Scene {
         MenuBarExtra("usb-boop", systemImage: "cable.connector") {
             MenuBarContentView(model: model)
-                .task {
-                    model.start()
-                }
         }
         .menuBarExtraStyle(.window)
 
