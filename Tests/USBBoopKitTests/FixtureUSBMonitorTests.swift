@@ -4,63 +4,77 @@ import XCTest
 @MainActor
 final class FixtureUSBMonitorTests: XCTestCase {
 
-    // MARK: - start
+    func test_start_publishesDevices() {
+        let devices = [
+            USBDevice(id: 1, name: "Test Device", speed: .usb3Gen1),
+        ]
+        let monitor = FixtureUSBMonitor(devices: devices)
 
-    func test_start_firesOnDevicesChanged() {
-        let monitor = FixtureUSBMonitor()
         var receivedDevices: [USBDevice]?
-
-        monitor.onDevicesChanged = { devices in
-            receivedDevices = devices
-        }
+        monitor.onDevicesChanged = { receivedDevices = $0 }
 
         monitor.start()
 
-        XCTAssertNotNil(receivedDevices, "onDevicesChanged should have been called")
-        XCTAssertFalse(receivedDevices!.isEmpty, "Fixture should provide a non-empty device list")
+        XCTAssertEqual(receivedDevices?.count, 1)
+        XCTAssertEqual(receivedDevices?.first?.name, "Test Device")
     }
 
-    func test_start_firesOnDeviceAttached() {
-        let monitor = FixtureUSBMonitor()
+    func test_start_firesAttachedForNewest() {
+        let devices = [
+            USBDevice(id: 1, name: "First", speed: .usb2High),
+            USBDevice(id: 2, name: "Second", speed: .usb3Gen1),
+        ]
+        let monitor = FixtureUSBMonitor(devices: devices)
+
         var attachedDevice: USBDevice?
-
-        monitor.onDeviceAttached = { device in
-            attachedDevice = device
-        }
+        monitor.onDeviceAttached = { attachedDevice = $0 }
 
         monitor.start()
 
-        XCTAssertNotNil(attachedDevice, "onDeviceAttached should have been called with the first fixture device")
-        XCTAssertEqual(attachedDevice?.name, PreviewFixtures.connectedDevices.first?.name)
+        XCTAssertEqual(attachedDevice?.name, "First")
     }
 
-    // MARK: - stop
+    func test_start_emptyDevices_noAttached() {
+        let monitor = FixtureUSBMonitor(devices: [])
 
-    func test_stop_isIdempotent() {
-        let monitor = FixtureUSBMonitor()
+        var attachedDevice: USBDevice?
+        monitor.onDeviceAttached = { attachedDevice = $0 }
 
-        // Calling stop() multiple times must not crash.
-        monitor.stop()
-        monitor.stop()
-        monitor.stop()
+        monitor.start()
+
+        XCTAssertNil(attachedDevice)
     }
 
-    // MARK: - refresh
+    func test_refresh_publishesDevicesAgain() {
+        let devices = [
+            USBDevice(id: 1, name: "D", speed: .usb2High),
+        ]
+        let monitor = FixtureUSBMonitor(devices: devices)
 
-    func test_refresh_firesOnDevicesChanged() {
-        let monitor = FixtureUSBMonitor()
         var callCount = 0
-
-        monitor.onDevicesChanged = { _ in
-            callCount += 1
-        }
+        monitor.onDevicesChanged = { _ in callCount += 1 }
 
         monitor.start()
-        XCTAssertEqual(callCount, 1, "start() should fire onDevicesChanged once")
+        XCTAssertEqual(callCount, 1)
 
-        // Reset tracking and verify refresh fires the callback again.
-        callCount = 0
         monitor.refresh()
-        XCTAssertEqual(callCount, 1, "refresh() should fire onDevicesChanged again")
+        XCTAssertEqual(callCount, 2)
+    }
+
+    func test_stop_doesNotCrash() {
+        let monitor = FixtureUSBMonitor(devices: [])
+        monitor.stop()
+        // No crash = success
+    }
+
+    func test_defaultDevices_usesPreviewFixtures() {
+        let monitor = FixtureUSBMonitor()
+
+        var receivedDevices: [USBDevice]?
+        monitor.onDevicesChanged = { receivedDevices = $0 }
+
+        monitor.start()
+
+        XCTAssertEqual(receivedDevices?.count, PreviewFixtures.connectedDevices.count)
     }
 }

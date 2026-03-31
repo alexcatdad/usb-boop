@@ -19,28 +19,13 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
 
     private let reader = USBRegistryDeviceReader()
     private var knownDevices: [UInt64: USBDevice] = [:]
-    // nonisolated(unsafe) because these C/CF resources must be accessible from deinit,
-    // which is nonisolated in Swift 6. All mutations happen on MainActor; deinit is a
-    // last-resort safety net.
-    private nonisolated(unsafe) var notificationPort: IONotificationPortRef?
-    private nonisolated(unsafe) var runLoopSource: CFRunLoopSource?
-    private nonisolated(unsafe) var matchedIterator: io_iterator_t = 0
-    private nonisolated(unsafe) var terminatedIterator: io_iterator_t = 0
+    private var notificationPort: IONotificationPortRef?
+    private var matchedIterator: io_iterator_t = 0
+    private var terminatedIterator: io_iterator_t = 0
     private var didPrimeAttachedIterator = false
     private var started = false
 
     public init() {}
-
-    deinit {
-        if matchedIterator != 0 { IOObjectRelease(matchedIterator) }
-        if terminatedIterator != 0 { IOObjectRelease(terminatedIterator) }
-        if let port = notificationPort {
-            if let source = runLoopSource {
-                CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .defaultMode)
-            }
-            IONotificationPortDestroy(port)
-        }
-    }
 
     public func start() {
         guard !started else {
@@ -59,9 +44,8 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
 
         self.notificationPort = notificationPort
 
-        if let source = IONotificationPortGetRunLoopSource(notificationPort)?.takeUnretainedValue() {
-            CFRunLoopAddSource(CFRunLoopGetMain(), source, .defaultMode)
-            self.runLoopSource = source
+        if let runLoopSource = IONotificationPortGetRunLoopSource(notificationPort)?.takeUnretainedValue() {
+            CFRunLoopAddSource(CFRunLoopGetMain(), runLoopSource, .defaultMode)
         }
 
         registerAttachNotifications()
@@ -82,19 +66,8 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
         }
 
         if let notificationPort {
-            if let source = runLoopSource {
-                CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .defaultMode)
-                self.runLoopSource = nil
-            }
             IONotificationPortDestroy(notificationPort)
             self.notificationPort = nil
-        }
-
-        // Balance the two passRetained calls from start() (one for matched, one for terminated).
-        if started {
-            Unmanaged.passUnretained(self).release()
-            Unmanaged.passUnretained(self).release()
-            started = false
         }
     }
 
@@ -120,7 +93,7 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
                 continue
             }
 
-            refreshed[device.id] = merge(device, withKnownDevice: knownDevices[device.id])
+            refreshed[device.id] = USBDeviceMerger.merge(device, withKnownDevice: knownDevices[device.id])
         }
 
         knownDevices = refreshed
@@ -138,7 +111,7 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
             kIOMatchedNotification,
             IOServiceMatching(usbHostDeviceClassName),
             usbMatchedCallback,
-            Unmanaged.passRetained(self).toOpaque(),
+            Unmanaged.passUnretained(self).toOpaque(),
             &matchedIterator
         )
 
@@ -163,7 +136,7 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
             kIOTerminatedNotification,
             IOServiceMatching(usbHostDeviceClassName),
             usbTerminatedCallback,
-            Unmanaged.passRetained(self).toOpaque(),
+            Unmanaged.passUnretained(self).toOpaque(),
             &terminatedIterator
         )
 
@@ -186,7 +159,7 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
                 continue
             }
 
-            let mergedDevice = merge(device, withKnownDevice: knownDevices[device.id])
+            let mergedDevice = USBDeviceMerger.merge(device, withKnownDevice: knownDevices[device.id])
             let wasKnown = knownDevices[device.id] != nil
             knownDevices[mergedDevice.id] = mergedDevice
             USBBoopLog.usbMonitor.notice(
@@ -222,11 +195,40 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
         }
     }
 
-    private func merge(_ device: USBDevice, withKnownDevice existing: USBDevice?) -> USBDevice {
-        guard let existing else {
-            return device
-        }
+    private func publishSnapshot() {
+        let devices = USBDeviceMerger.sorted(knownDevices.values)
+        USBBoopLog.usbMonitor.debug("Publishing \(devices.count) visible USB devices to the app model")
+        onDevicesChanged?(devices)
+    }
+}
 
+private func usbMatchedCallback(refCon: UnsafeMutableRawPointer?, iterator: io_iterator_t) {
+    guard let refCon else {
+        return
+    }
+
+    let monitor = Unmanaged<IOKitUSBMonitor>.fromOpaque(refCon).takeUnretainedValue()
+    MainActor.assumeIsolated {
+        monitor.handleMatchedDevices(from: iterator)
+    }
+}
+
+private func usbTerminatedCallback(refCon: UnsafeMutableRawPointer?, iterator: io_iterator_t) {
+    guard let refCon else {
+        return
+    }
+
+    let monitor = Unmanaged<IOKitUSBMonitor>.fromOpaque(refCon).takeUnretainedValue()
+    MainActor.assumeIsolated {
+        monitor.handleTerminatedDevices(from: iterator)
+    }
+}
+
+// MARK: - USBDeviceMerger
+
+enum USBDeviceMerger {
+    static func merge(_ device: USBDevice, withKnownDevice existing: USBDevice?) -> USBDevice {
+        guard let existing else { return device }
         return USBDevice(
             id: device.id,
             name: device.name,
@@ -241,49 +243,19 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
         )
     }
 
-    private func publishSnapshot() {
-        let devices = knownDevices.values.sorted {
+    static func sorted(_ devices: some Collection<USBDevice>) -> [USBDevice] {
+        devices.sorted {
             if $0.connectedAt == $1.connectedAt {
                 return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
             }
-
             return $0.connectedAt > $1.connectedAt
         }
-
-        USBBoopLog.usbMonitor.debug("Publishing \(devices.count) visible USB devices to the app model")
-        onDevicesChanged?(devices)
     }
 }
 
-private func usbMatchedCallback(refCon: UnsafeMutableRawPointer?, iterator: io_iterator_t) {
-    guard let refCon else {
-        return
-    }
+// MARK: - USBRegistryDeviceReader
 
-    let monitor = Unmanaged<IOKitUSBMonitor>.fromOpaque(refCon).takeUnretainedValue()
-    // Safety: MainActor.assumeIsolated is correct here because the IOKit notification port
-    // is registered on the main RunLoop via CFRunLoopAddSource(CFRunLoopGetMain(), ...),
-    // so this callback always fires on the main thread.
-    MainActor.assumeIsolated {
-        monitor.handleMatchedDevices(from: iterator)
-    }
-}
-
-private func usbTerminatedCallback(refCon: UnsafeMutableRawPointer?, iterator: io_iterator_t) {
-    guard let refCon else {
-        return
-    }
-
-    let monitor = Unmanaged<IOKitUSBMonitor>.fromOpaque(refCon).takeUnretainedValue()
-    // Safety: MainActor.assumeIsolated is correct here because the IOKit notification port
-    // is registered on the main RunLoop via CFRunLoopAddSource(CFRunLoopGetMain(), ...),
-    // so this callback always fires on the main thread.
-    MainActor.assumeIsolated {
-        monitor.handleTerminatedDevices(from: iterator)
-    }
-}
-
-private struct USBRegistryDeviceReader {
+struct USBRegistryDeviceReader {
     func makeDevice(from service: io_registry_entry_t) -> USBDevice? {
         guard let id = registryEntryID(for: service) else {
             return nil
@@ -329,7 +301,33 @@ private struct USBRegistryDeviceReader {
         return entryID
     }
 
-    private func resolvedName(
+    func sanitize(_ raw: String?) -> String? {
+        guard let raw else { return nil }
+
+        let cleaned = raw.unicodeScalars.filter { scalar in
+            // Keep printable characters: letters, marks, numbers, punctuation, symbols, spaces
+            // Reject control characters (Cc), format characters (Cf), surrogates, etc.
+            switch scalar.properties.generalCategory {
+            case .control, .format, .surrogate, .privateUse, .unassigned:
+                return false
+            default:
+                return true
+            }
+        }
+
+        let result = String(String.UnicodeScalarView(cleaned))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !result.isEmpty else { return nil }
+
+        if result.count > 128 {
+            return String(result.prefix(128))
+        }
+
+        return result
+    }
+
+    func resolvedName(
         productName: String?,
         vendorName: String?,
         vendorID: Int?,
@@ -372,15 +370,5 @@ private struct USBRegistryDeviceReader {
 
     private func property(for service: io_registry_entry_t, key: String) -> Any? {
         IORegistryEntryCreateCFProperty(service, key as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue()
-    }
-
-    /// Strip control characters and default-ignorable code points, truncate to 128 characters.
-    private func sanitize(_ string: String?) -> String? {
-        guard let string else { return nil }
-        let cleaned = string.unicodeScalars.filter {
-            !$0.properties.isDefaultIgnorableCodePoint && CharacterSet.controlCharacters.inverted.contains($0)
-        }
-        let result = String(String.UnicodeScalarView(cleaned))
-        return result.isEmpty ? nil : String(result.prefix(128))
     }
 }

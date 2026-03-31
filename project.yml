@@ -42,8 +42,6 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         MARKETING_VERSION: 0.0.0-dev
         CURRENT_PROJECT_VERSION: 1
-        ENABLE_HARDENED_RUNTIME: YES
-        CODE_SIGN_ENTITLEMENTS: Sources/App/usb-boop.entitlements
 
   USBBoopKitTests:
     type: bundle.unit-test
@@ -51,6 +49,23 @@ targets:
     deploymentTarget: "14.0"
     sources:
       - path: Tests/USBBoopKitTests
+    dependencies:
+      - target: USBBoopKit
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+
+  USBBoopAppTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Tests/USBBoopAppTests
+      - path: Sources/App
+        includes:
+          - "*.swift"
+        excludes:
+          - USBBoopApp.swift
     dependencies:
       - target: USBBoopKit
     settings:
@@ -66,3 +81,4 @@ schemes:
     test:
       targets:
         - USBBoopKitTests
+        - USBBoopAppTests
