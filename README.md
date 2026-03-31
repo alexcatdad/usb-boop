@@ -1,59 +1,118 @@
-# usb-boop
+<p align="center">
+  <img src="docs/icon.png" width="128" height="128" alt="usb-boop icon">
+</p>
 
-`usb-boop` is a native macOS menu bar app that detects newly attached USB devices and immediately tells you how fast they actually connected.
+<h1 align="center">usb-boop</h1>
 
-The goal is simple: make cable, hub, and port testing faster than digging through System Information.
+<p align="center">
+  A native macOS menu bar app that detects USB devices the moment they connect<br>and tells you the negotiated link speed — instantly.
+</p>
 
-## Planned Product Shape
+<p align="center">
+  <a href="https://github.com/alexcatdad/usb-boop/releases/latest"><img src="https://img.shields.io/github/v/release/alexcatdad/usb-boop?style=flat-square&label=latest" alt="Latest Release"></a>
+  <a href="https://github.com/alexcatdad/usb-boop/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/alexcatdad/usb-boop/ci.yml?style=flat-square&label=CI" alt="CI Status"></a>
+  <img src="https://img.shields.io/badge/platform-macOS%2014%2B-blue?style=flat-square" alt="macOS 14+">
+  <img src="https://img.shields.io/badge/arch-Apple%20Silicon-blue?style=flat-square" alt="Apple Silicon">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/alexcatdad/usb-boop?style=flat-square" alt="MIT License"></a>
+</p>
 
-- Native macOS menu bar app
-- Real-time USB attach detection
-- Local notification on connect with device name and negotiated speed
-- Short recent-history menu
-- Offline-first, local-only behavior
+---
 
-## Planned Tech Direction
+## Why
 
-- Swift
-- SwiftUI for settings and detail surfaces
-- AppKit for menu bar integration
-- IOKit / IORegistry access for USB attach notifications and device metadata
-- UserNotifications for system notifications
+Plugging in a USB device and wondering *"did it actually connect at full speed?"* shouldn't require digging through System Information. usb-boop lives in your menu bar, watches IOKit for attach events, and fires a notification with the device name and negotiated speed in under a second.
 
-## Installation Goal
+Perfect for testing cables, hubs, and ports.
 
-The app is intended to be installed via Homebrew cask from `alexcatdad/tap`.
-
-## Current MVP Scope
-
-- Menu bar-only macOS app
-- Native SwiftUI companion window via `MenuBarExtra`
-- Current connected USB device list
-- Local notification on connect with device name and negotiated speed
-- No persistent history in MVP
-- No launch-at-login in MVP
-
-## Build Locally
-
-1. Install XcodeGen: `brew install xcodegen`
-2. Generate the project: `xcodegen generate`
-3. Open the project: `open usb-boop.xcodeproj`
-
-You can also run tests from the command line:
+## Install
 
 ```sh
-xcodegen generate
-xcodebuild -project usb-boop.xcodeproj -scheme usb-boop -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO test
+brew install --cask alexcatdad/tap/usb-boop
 ```
 
-## Release Model
+Or download the latest `usb-boop-macos-arm64.zip` from [Releases](https://github.com/alexcatdad/usb-boop/releases/latest), unzip, and drag to Applications.
 
-- Pushes to `main` produce a CalVer release
-- Release tags use `vYYYY.MM.DD.N`
-- GitHub Actions packages the app and updates the Homebrew cask in `alexcatdad/homebrew-tap`
+> **Note:** usb-boop is not yet signed with a Developer ID certificate. Homebrew handles this automatically, but if you download manually you may need to right-click the app and choose **Open** on first launch, or run:
+> ```sh
+> xattr -rd com.apple.quarantine /Applications/usb-boop.app
+> ```
+> Developer ID signing is planned for an upcoming release.
 
-Release details live in [release-automation.md](/Users/alex/REPOS/alexcatdad/usb-boop/docs/release-automation.md).
+## What it does
 
-## Repository Status
+- Lives in the menu bar with zero dock presence
+- Detects USB device connections in real time via IOKit
+- Shows a native macOS notification with device name and link speed
+- Displays all currently connected USB devices in a companion window
+- Color-coded speed display (green for USB 3.1/3.2, blue for USB 3.0, orange for USB 2.0)
+- Right-click any device to copy its info
+- Persists your notification and display preferences
 
-This repository is in active scaffolding. The initial product brief and decision log live in [docs/initial-brief.md](/Users/alex/REPOS/alexcatdad/usb-boop/docs/initial-brief.md).
+### Speeds it recognizes
+
+| Label | Speed | Standard |
+|-------|-------|----------|
+| USB 1.x Low | 1.5 Mbps | USB 1.0 |
+| USB 1.x Full | 12 Mbps | USB 1.1 |
+| USB 2.0 High | 480 Mbps | USB 2.0 |
+| USB 3.2 Gen 1 | 5 Gbps | USB 3.0 / 3.1 Gen 1 |
+| USB 3.2 Gen 2 | 10 Gbps | USB 3.1 Gen 2 |
+| USB 3.2 Gen 2x2 | 20 Gbps | USB 3.2 |
+
+## Build from source
+
+Requires Xcode 16+ and Apple Silicon.
+
+```sh
+brew install xcodegen swiftlint
+xcodegen generate
+open usb-boop.xcodeproj
+```
+
+Run tests and lint from the command line:
+
+```sh
+swiftlint --strict
+xcodegen generate
+xcodebuild -project usb-boop.xcodeproj -scheme usb-boop \
+  -destination 'platform=macOS,arch=arm64' \
+  CODE_SIGNING_ALLOWED=NO test
+```
+
+Debug builds are named `usb-boop-dev` so they don't conflict with the Homebrew install.
+
+### Development mode
+
+Set `USB_BOOP_USE_FIXTURES=1` in the Xcode scheme environment to run with simulated devices (no hardware needed). Only available in Debug builds.
+
+## Architecture
+
+```
+Sources/
+  App/                    SwiftUI app, menu bar, settings
+    AppModel.swift        Observable state, monitor + notification orchestration
+    MenuBarContentView    Companion window with device list
+    SettingsView          Preferences
+  USBBoopKit/             Reusable framework
+    IOKitUSBMonitor       Real USB monitoring via IOKit
+    FixtureUSBMonitor     Mock monitor for development
+    USBDevice             Device model
+    USBConnectionSpeed    Speed enum with display labels
+    UserNotificationCoordinator  macOS notification handling
+Tests/
+  USBBoopKitTests/        Framework unit + integration tests
+  USBBoopAppTests/        App model tests
+```
+
+## Release model
+
+Releases follow [CalVer](https://calver.org/) (`YYYY.MM.DD.N`). Every push to `main` that isn't a docs/ci/chore commit triggers a release via GitHub Actions, which:
+
+1. Tags the commit
+2. Builds and signs the `.app` bundle
+3. Creates a GitHub Release with the artifact and SHA256 checksum
+4. Updates the Homebrew cask in [`alexcatdad/homebrew-tap`](https://github.com/alexcatdad/homebrew-tap)
+
+## License
+
+[MIT](LICENSE)
