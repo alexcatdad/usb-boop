@@ -31,6 +31,8 @@ targets:
     deploymentTarget: "14.0"
     sources:
       - path: Sources/App
+      - path: Sources/App/PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       - target: USBBoopKit
     settings:

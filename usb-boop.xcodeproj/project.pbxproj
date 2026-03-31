@@ -20,6 +20,7 @@
 		591A59F65E4FFC61AEC1D9DB /* USBBoopKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = F87B1CD107B298956A80FC80 /* USBBoopKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		654C450907941E6E8494F279 /* USBConnectionSpeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCD145F33A162AF88A98BA3F /* USBConnectionSpeed.swift */; };
 		681381C841BEA2E531E5C58C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC633E1C5B5DA068B5503794 /* SettingsView.swift */; };
+		69C75F53899929821019948E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 9E355E3B86CF7C749173D148 /* PrivacyInfo.xcprivacy */; };
 		733429A9C271E313CDE9253A /* USBRegistryDeviceReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1CB5CD4057F2C5FA17C125E /* USBRegistryDeviceReaderTests.swift */; };
 		7DAD07B14BAF67843795FD02 /* USBDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACEDE44CD013FE33736D8FA /* USBDevice.swift */; };
 		8268505676007C9F08CE45EF /* USBBoopKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F87B1CD107B298956A80FC80 /* USBBoopKit.framework */; };
@@ -121,6 +122,7 @@
 		608FD5159EE45824AA6A00F0 /* usb-boop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "usb-boop.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7F7D8BB051DC2DD7629174A3 /* USBConnectionSpeedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBConnectionSpeedTests.swift; sourceTree = "<group>"; };
 		92D349A4212AE4178E8426C6 /* USBBoopAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = USBBoopAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E355E3B86CF7C749173D148 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		A0224E2F7A5482196332BF6A /* UserNotificationCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserNotificationCoordinatorTests.swift; sourceTree = "<group>"; };
 		A1719836954D298A36455E2B /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		A3ED22F1AF3F5664266A7401 /* usb-boop.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "usb-boop.entitlements"; sourceTree = "<group>"; };
@@ -190,6 +192,7 @@
 				223112FFA4516088CB75EEC8 /* Assets.xcassets */,
 				323C0969CBBFF407AC5DA022 /* Info.plist */,
 				217BE6D0074F0A91D5B68A11 /* MenuBarContentView.swift */,
+				9E355E3B86CF7C749173D148 /* PrivacyInfo.xcprivacy */,
 				FC633E1C5B5DA068B5503794 /* SettingsView.swift */,
 				A3ED22F1AF3F5664266A7401 /* usb-boop.entitlements */,
 				02ADFB3BE9477E416E8CF74D /* USBBoopApp.swift */,
@@ -378,6 +381,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				53B5962F821314FCD72D8B90 /* Assets.xcassets in Resources */,
+				69C75F53899929821019948E /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

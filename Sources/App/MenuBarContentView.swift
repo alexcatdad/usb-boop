@@ -37,6 +37,8 @@ struct MenuBarContentView: View {
                         .font(.body.weight(.semibold).monospacedDigit())
                         .foregroundStyle(speedColor(for: device.speed))
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(device.name), \(device.speed.displayLabel)")
 
                 Text(device.detailSummary)
                     .font(.caption)
@@ -174,6 +176,10 @@ private struct DeviceRow: View {
         .padding(.horizontal, 6)
         .background(.clear)
         .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(device.name), \(device.speed.displayLabel)")
+        .accessibilityValue(device.speed.technicalLabel ?? "")
+        .accessibilityHint("Right-click to copy device info")
         .contextMenu {
             Button("Copy Device Info") {
                 copyDeviceInfo()
