@@ -36,6 +36,11 @@ if [[ ! -d "${app_path}" ]]; then
   exit 1
 fi
 
+# Ad-hoc sign so Gatekeeper doesn't flag the app as "damaged".
+# Replace with Developer ID signing when available.
+codesign --force --sign - "${app_path}"
+echo "Ad-hoc signed ${app_path}"
+
 rm -f "${artifact_path}"
 ditto -c -k --sequesterRsrc --keepParent "${app_path}" "${artifact_path}"
 
