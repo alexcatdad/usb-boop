@@ -8,7 +8,7 @@ public protocol NotificationCenterProtocol {
     func add(_ request: UNNotificationRequest) async throws
 }
 
-extension UNUserNotificationCenter: @preconcurrency NotificationCenterProtocol {
+extension UNUserNotificationCenter: NotificationCenterProtocol {
     public func authorizationStatus() async -> UNAuthorizationStatus {
         await notificationSettings().authorizationStatus
     }
