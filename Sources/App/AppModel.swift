@@ -5,7 +5,7 @@ import USBBoopKit
 
 @MainActor
 @Observable
-final class AppModel {
+final class AppModel: @unchecked Sendable {
     var currentDevices: [USBDevice] = []
     var latestConnectedDevice: USBDevice?
     var notificationsEnabled: Bool {
@@ -68,27 +68,22 @@ final class AppModel {
 
     private func bindMonitor() {
         monitor.onDevicesChanged = { [weak self] devices in
-            Task { @MainActor in
-                USBBoopLog.appModel.notice("Received device snapshot with \(devices.count) devices")
-                self?.currentDevices = devices
-            }
+            guard let self else { return }
+            USBBoopLog.appModel.notice("Received device snapshot with \(devices.count) devices")
+            self.currentDevices = devices
         }
 
         monitor.onDeviceAttached = { [weak self] device in
-            Task { @MainActor in
-                guard let self else {
-                    return
-                }
+            guard let self else { return }
 
-                self.latestConnectedDevice = device
-                USBBoopLog.appModel.notice("Device attached in app model: \(device.name, privacy: .public) at \(device.speed.displayLabel, privacy: .public)")
+            self.latestConnectedDevice = device
+            USBBoopLog.appModel.notice("Device attached in app model: \(device.name, privacy: .public) at \(device.speed.displayLabel, privacy: .public)")
 
-                if self.notificationsEnabled, let notifier = self.notifier {
-                    USBBoopLog.appModel.notice("Sending user notification for \(device.name, privacy: .public)")
-                    notifier.sendConnectionNotification(for: device)
-                } else {
-                    USBBoopLog.appModel.notice("Notifications disabled; not sending alert for \(device.name, privacy: .public)")
-                }
+            if self.notificationsEnabled, let notifier = self.notifier {
+                USBBoopLog.appModel.notice("Sending user notification for \(device.name, privacy: .public)")
+                notifier.sendConnectionNotification(for: device)
+            } else {
+                USBBoopLog.appModel.notice("Notifications disabled; not sending alert for \(device.name, privacy: .public)")
             }
         }
     }
@@ -98,11 +93,10 @@ final class AppModel {
             return
         }
 
-        notifier.requestAuthorizationIfNeeded { [weak self] state in
-            Task { @MainActor in
-                self?.notificationAuthorizationSummary = Self.description(for: state)
-                USBBoopLog.appModel.notice("Notification authorization state after request: \(Self.description(for: state), privacy: .public)")
-            }
+        Task {
+            let state = await notifier.requestAuthorizationIfNeeded()
+            self.notificationAuthorizationSummary = Self.description(for: state)
+            USBBoopLog.appModel.notice("Notification authorization state after request: \(Self.description(for: state), privacy: .public)")
         }
     }
 
@@ -111,11 +105,10 @@ final class AppModel {
             return
         }
 
-        notifier.refreshAuthorizationState { [weak self] state in
-            Task { @MainActor in
-                self?.notificationAuthorizationSummary = Self.description(for: state)
-                USBBoopLog.appModel.debug("Refreshed notification authorization: \(Self.description(for: state), privacy: .public)")
-            }
+        Task {
+            let state = await notifier.refreshAuthorizationState()
+            self.notificationAuthorizationSummary = Self.description(for: state)
+            USBBoopLog.appModel.debug("Refreshed notification authorization: \(Self.description(for: state), privacy: .public)")
         }
     }
 

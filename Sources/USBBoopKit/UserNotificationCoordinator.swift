@@ -14,37 +14,38 @@ public final class UserNotificationCoordinator: @unchecked Sendable {
         self.centerProvider = centerProvider
     }
 
-    public func requestAuthorizationIfNeeded(completion: @escaping @Sendable (AuthorizationState) -> Void) {
+    public func requestAuthorizationIfNeeded() async -> AuthorizationState {
         let center = centerProvider()
-        center.getNotificationSettings { settings in
-            switch settings.authorizationStatus {
-            case .authorized, .ephemeral, .provisional:
-                completion(.authorized)
-            case .denied:
-                completion(.denied)
-            case .notDetermined:
-                center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
-                    completion(granted ? .authorized : .denied)
-                }
-            @unknown default:
-                completion(.denied)
+        let settings = await center.notificationSettings()
+        switch settings.authorizationStatus {
+        case .authorized, .ephemeral, .provisional:
+            return .authorized
+        case .denied:
+            return .denied
+        case .notDetermined:
+            do {
+                let granted = try await center.requestAuthorization(options: [.alert, .badge, .sound])
+                return granted ? .authorized : .denied
+            } catch {
+                return .denied
             }
+        @unknown default:
+            return .denied
         }
     }
 
-    public func refreshAuthorizationState(completion: @escaping @Sendable (AuthorizationState) -> Void) {
+    public func refreshAuthorizationState() async -> AuthorizationState {
         let center = centerProvider()
-        center.getNotificationSettings { settings in
-            switch settings.authorizationStatus {
-            case .authorized, .ephemeral, .provisional:
-                completion(.authorized)
-            case .denied:
-                completion(.denied)
-            case .notDetermined:
-                completion(.notDetermined)
-            @unknown default:
-                completion(.denied)
-            }
+        let settings = await center.notificationSettings()
+        switch settings.authorizationStatus {
+        case .authorized, .ephemeral, .provisional:
+            return .authorized
+        case .denied:
+            return .denied
+        case .notDetermined:
+            return .notDetermined
+        @unknown default:
+            return .denied
         }
     }
 

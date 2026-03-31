@@ -13,9 +13,9 @@ private let usbDeviceClassKey = "bDeviceClass"
 private let usbHubClassValue = 9
 
 @MainActor
-public final class IOKitUSBMonitor: USBMonitoring {
-    public var onDevicesChanged: (([USBDevice]) -> Void)?
-    public var onDeviceAttached: ((USBDevice) -> Void)?
+public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
+    public var onDevicesChanged: (@MainActor ([USBDevice]) -> Void)?
+    public var onDeviceAttached: (@MainActor (USBDevice) -> Void)?
 
     private let reader = USBRegistryDeviceReader()
     private var knownDevices: [UInt64: USBDevice] = [:]
@@ -234,7 +234,7 @@ private func usbMatchedCallback(refCon: UnsafeMutableRawPointer?, iterator: io_i
     }
 
     let monitor = Unmanaged<IOKitUSBMonitor>.fromOpaque(refCon).takeUnretainedValue()
-    Task { @MainActor in
+    MainActor.assumeIsolated {
         monitor.handleMatchedDevices(from: iterator)
     }
 }
@@ -245,7 +245,7 @@ private func usbTerminatedCallback(refCon: UnsafeMutableRawPointer?, iterator: i
     }
 
     let monitor = Unmanaged<IOKitUSBMonitor>.fromOpaque(refCon).takeUnretainedValue()
-    Task { @MainActor in
+    MainActor.assumeIsolated {
         monitor.handleTerminatedDevices(from: iterator)
     }
 }
