@@ -16,7 +16,9 @@ public final class FixtureUSBMonitor: USBMonitoring {
         onDevicesChanged?(devices)
 
         if let newest = devices.first {
-            USBBoopLog.usbMonitor.notice("Fixture attached device: \(newest.name, privacy: .public) at \(newest.speed.displayLabel, privacy: .public)")
+            USBBoopLog.usbMonitor.notice(
+                "Fixture attached device: \(newest.name, privacy: .public) at \(newest.speed.displayLabel, privacy: .public)"
+            )
             onDeviceAttached?(newest)
         }
     }

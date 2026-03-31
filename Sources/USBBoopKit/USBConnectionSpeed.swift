@@ -72,5 +72,4 @@ public enum USBConnectionSpeed: Int, CaseIterable, Codable, Sendable {
             return "USB high-speed path"
         }
     }
-
 }

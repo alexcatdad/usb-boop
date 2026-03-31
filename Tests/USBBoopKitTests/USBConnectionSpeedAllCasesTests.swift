@@ -1,5 +1,5 @@
-import XCTest
 @testable import USBBoopKit
+import XCTest
 
 final class USBConnectionSpeedAllCasesTests: XCTestCase {
 
@@ -26,20 +26,25 @@ final class USBConnectionSpeedAllCasesTests: XCTestCase {
     }
 
     func test_registryValue_roundTrip() {
-        // Map of registry values to expected (case, displayLabel) pairs.
-        let expectations: [(registryValue: Int, expectedCase: USBConnectionSpeed, expectedLabel: String)] = [
-            (2, .usb1Low, "1.5 Mbps"),
-            (1, .usb1Full, "12 Mbps"),
-            (3, .usb2High, "480 Mbps"),
-            (4, .usb3Gen1, "5 Gbps"),
-            (5, .usb3Gen2, "10 Gbps"),
-            (6, .usb3Gen2x2, "20 Gbps"),
+        // Map of registry values to expected case and displayLabel.
+        let registryValues =  [2, 1, 3, 4, 5, 6]
+        let expectedCases: [USBConnectionSpeed] = [
+            .usb1Low, .usb1Full, .usb2High, .usb3Gen1, .usb3Gen2, .usb3Gen2x2,
+        ]
+        let expectedLabels = [
+            "1.5 Mbps", "12 Mbps", "480 Mbps", "5 Gbps", "10 Gbps", "20 Gbps",
         ]
 
-        for (registryValue, expectedCase, expectedLabel) in expectations {
-            let speed = USBConnectionSpeed(registryValue: registryValue)
-            XCTAssertEqual(speed, expectedCase, "Registry value \(registryValue) should map to \(expectedCase)")
-            XCTAssertEqual(speed.displayLabel, expectedLabel, "Display label mismatch for registry value \(registryValue)")
+        for index in registryValues.indices {
+            let speed = USBConnectionSpeed(registryValue: registryValues[index])
+            XCTAssertEqual(
+                speed, expectedCases[index],
+                "Registry value \(registryValues[index]) should map to \(expectedCases[index])"
+            )
+            XCTAssertEqual(
+                speed.displayLabel, expectedLabels[index],
+                "Display label mismatch for registry value \(registryValues[index])"
+            )
         }
     }
 

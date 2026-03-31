@@ -1,5 +1,5 @@
-import XCTest
 @testable import USBBoopKit
+import XCTest
 
 final class USBDeviceMergerTests: XCTestCase {
 
@@ -86,9 +86,9 @@ final class USBDeviceMergerTests: XCTestCase {
 
     func test_sorted_sameTime_alphabetical() {
         let time = Date.now
-        let b = makeDevice(id: 1, name: "Bravo", connectedAt: time)
-        let a = makeDevice(id: 2, name: "Alpha", connectedAt: time)
-        let result = USBDeviceMerger.sorted([b, a])
+        let bravo = makeDevice(id: 1, name: "Bravo", connectedAt: time)
+        let alpha = makeDevice(id: 2, name: "Alpha", connectedAt: time)
+        let result = USBDeviceMerger.sorted([bravo, alpha])
         XCTAssertEqual(result.map(\.name), ["Alpha", "Bravo"])
     }
 

@@ -1,6 +1,6 @@
-import XCTest
-import UserNotifications
 @testable import USBBoopKit
+import UserNotifications
+import XCTest
 
 /// Mock notification center for testing.
 @MainActor
