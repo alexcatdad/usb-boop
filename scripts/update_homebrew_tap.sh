@@ -31,6 +31,14 @@ cask "usb-boop" do
 
   app "usb-boop.app"
 
+  # Remove quarantine flag since the app is ad-hoc signed, not notarized.
+  # This will be removed once Developer ID signing is in place.
+  postflight do
+    system_command "/usr/bin/xattr",
+                   args: ["-rd", "com.apple.quarantine", "#{appdir}/usb-boop.app"],
+                   sudo: false
+  end
+
   zap trash: [
     "~/Library/Preferences/com.alexcatdad.usb-boop.plist",
   ]
