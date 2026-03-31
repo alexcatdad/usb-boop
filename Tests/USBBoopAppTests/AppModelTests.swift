@@ -1,6 +1,6 @@
-import XCTest
-import UserNotifications
 @testable import USBBoopKit
+import UserNotifications
+import XCTest
 
 /// Lightweight mock for testing AppModel's notification flow.
 @MainActor
@@ -19,10 +19,12 @@ final class AppModelTests: XCTestCase {
 
     // nonisolated(unsafe) so setUp/tearDown (which are nonisolated) can access it.
     // All meaningful access happens from @MainActor test methods.
-    private nonisolated(unsafe) var testDefaults: UserDefaults!
+    // swiftlint:disable:next implicitly_unwrapped_optional
+    nonisolated(unsafe) private var testDefaults: UserDefaults!
 
     override func setUp() {
         super.setUp()
+        // swiftlint:disable:next force_unwrapping
         testDefaults = UserDefaults(suiteName: "com.alexcatdad.usb-boop.tests.\(UUID().uuidString)")!
     }
 
@@ -95,21 +97,21 @@ final class AppModelTests: XCTestCase {
 
     // MARK: - Computed properties (with device via monitor callback)
 
-    func test_latestResultTitle_withDevice() {
+    func test_latestResultTitle_withDevice() throws {
         let fixture = FixtureUSBMonitor()
         let model = makeModel(monitor: fixture)
         // Trigger monitor callbacks directly (bindMonitor already wired in init)
         fixture.start()
-        XCTAssertNotNil(model.latestConnectedDevice)
-        XCTAssertEqual(model.latestResultTitle, model.latestConnectedDevice!.notificationBody)
+        let device = try XCTUnwrap(model.latestConnectedDevice)
+        XCTAssertEqual(model.latestResultTitle, device.notificationBody)
     }
 
-    func test_latestResultDetail_withDevice() {
+    func test_latestResultDetail_withDevice() throws {
         let fixture = FixtureUSBMonitor()
         let model = makeModel(monitor: fixture)
         fixture.start()
-        XCTAssertNotNil(model.latestConnectedDevice)
-        XCTAssertEqual(model.latestResultDetail, model.latestConnectedDevice!.detailSummary)
+        let device = try XCTUnwrap(model.latestConnectedDevice)
+        XCTAssertEqual(model.latestResultDetail, device.detailSummary)
     }
 
     // MARK: - Monitor callbacks via fixture.start()

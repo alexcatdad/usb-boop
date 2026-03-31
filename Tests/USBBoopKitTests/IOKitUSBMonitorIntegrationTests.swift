@@ -1,5 +1,5 @@
-import XCTest
 @testable import USBBoopKit
+import XCTest
 
 @MainActor
 final class IOKitUSBMonitorIntegrationTests: XCTestCase {

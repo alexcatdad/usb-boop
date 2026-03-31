@@ -162,8 +162,11 @@ public final class IOKitUSBMonitor: USBMonitoring, @unchecked Sendable {
             let mergedDevice = USBDeviceMerger.merge(device, withKnownDevice: knownDevices[device.id])
             let wasKnown = knownDevices[device.id] != nil
             knownDevices[mergedDevice.id] = mergedDevice
+            let shouldNotifyDevice = notify && !wasKnown
+            let deviceName = mergedDevice.name
+            let speedLabel = mergedDevice.speed.displayLabel
             USBBoopLog.usbMonitor.notice(
-                "Observed USB device: \(mergedDevice.name, privacy: .public) speed=\(mergedDevice.speed.displayLabel, privacy: .public) notify=\(notify && !wasKnown)"
+                "Observed USB device: \(deviceName, privacy: .public) speed=\(speedLabel, privacy: .public) notify=\(shouldNotifyDevice)"
             )
 
             if notify && !wasKnown {

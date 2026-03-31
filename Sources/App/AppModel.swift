@@ -69,7 +69,9 @@ final class AppModel {
     func start() {
         guard !hasStarted else { return }
         hasStarted = true
-        USBBoopLog.appModel.notice("App model starting; notificationsEnabled=\(self.notificationsEnabled) keepLatestResultPinned=\(self.keepLatestResultPinned)")
+        USBBoopLog.appModel.notice(
+            "App model starting; notificationsEnabled=\(self.notificationsEnabled) keepLatestResultPinned=\(self.keepLatestResultPinned)"
+        )
         notifier = makeNotifier()
         monitor.start()
         refreshNotificationAuthorization()
@@ -91,7 +93,9 @@ final class AppModel {
             guard let self else { return }
 
             self.latestConnectedDevice = device
-            USBBoopLog.appModel.notice("Device attached in app model: \(device.name, privacy: .public) at \(device.speed.displayLabel, privacy: .public)")
+            USBBoopLog.appModel.notice(
+                "Device attached in app model: \(device.name, privacy: .public) at \(device.speed.displayLabel, privacy: .public)"
+            )
 
             if self.notificationsEnabled, let notifier = self.notifier {
                 USBBoopLog.appModel.notice("Sending user notification for \(device.name, privacy: .public)")

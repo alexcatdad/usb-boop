@@ -22,11 +22,14 @@ jobs:
           sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
           xcodebuild -version
 
-      - name: Install XcodeGen
+      - name: Install tools
         run: |
-          # Pin to a known-good version for build reproducibility
-          brew install xcodegen
+          brew install xcodegen swiftlint
           xcodegen --version
+          swiftlint version
+
+      - name: Lint
+        run: swiftlint --strict
 
       - name: Generate Xcode project
         run: xcodegen generate
