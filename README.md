@@ -38,6 +38,20 @@ Or download the latest `usb-boop-macos-arm64.zip` from [Releases](https://github
 > ```
 > Developer ID signing is planned for an upcoming release.
 
+### Verifying a download
+
+Because releases aren't notarized, macOS can't tell you who built them. Each
+release artifact carries a
+[build provenance attestation](https://docs.github.com/en/actions/concepts/security/artifact-attestations)
+instead, which you can check against the source:
+
+```sh
+gh attestation verify usb-boop-macos-arm64.zip --repo alexcatdad/usb-boop
+```
+
+That confirms the archive was built by this repository's release workflow at a
+specific commit. Each release also publishes a `.sha256` checksum.
+
 ## What it does
 
 - Lives in the menu bar with zero dock presence

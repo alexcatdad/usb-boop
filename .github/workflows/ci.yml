@@ -6,21 +6,29 @@ on:
       - main
   pull_request:
 
-permissions:
-  contents: read
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
-    runs-on: macos-15
+    runs-on: macos-26
+    permissions:
+      contents: read
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Select Xcode
         run: |
-          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
           xcodebuild -version
+          swift --version
 
       - name: Install tools
         run: |
@@ -42,3 +50,31 @@ jobs:
             -destination 'platform=macOS,arch=arm64' \
             CODE_SIGNING_ALLOWED=NO \
             test
+
+  cask:
+    name: Validate Homebrew cask
+    runs-on: macos-26
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Generate and lint the cask
+        # The cask is generated at release time, so this is the only place its
+        # syntax and style get checked before it lands in the public tap.
+        run: |
+          ./scripts/update_homebrew_tap.sh \
+            "${RUNNER_TEMP}/tap" \
+            "2026.01.01.0" \
+            "0000000000000000000000000000000000000000000000000000000000000000" \
+            "https://github.com/${GITHUB_REPOSITORY}/releases/download/v2026.01.01.0/usb-boop-macos-arm64.zip"
+
+          brew tap-new alexcatdad/caskcheck --no-git
+          mkdir -p "$(brew --repository alexcatdad/caskcheck)/Casks"
+          cp "${RUNNER_TEMP}/tap/Casks/usb-boop.rb" \
+            "$(brew --repository alexcatdad/caskcheck)/Casks/"
+          brew style --cask alexcatdad/caskcheck/usb-boop
