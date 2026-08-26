@@ -95,12 +95,16 @@ jobs:
           build-mode: manual
           queries: security-and-quality
 
+      # generic/platform=macOS rather than a concrete device: the CodeQL tracer
+      # runs this step under Rosetta, so xcodebuild reports "My Mac" as x86_64
+      # and nothing matches this arm64-only project. CodeQL needs the
+      # compilation, not a runnable destination.
       - name: Build
         run: |
           xcodebuild \
             -project usb-boop.xcodeproj \
             -scheme usb-boop \
-            -destination 'platform=macOS,arch=arm64' \
+            -destination 'generic/platform=macOS' \
             CODE_SIGNING_ALLOWED=NO \
             build
 
