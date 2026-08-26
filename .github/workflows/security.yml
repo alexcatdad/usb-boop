@@ -79,6 +79,15 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
 
+      # Must happen before codeql-action/init. Init injects an osx64
+      # libtrace.dylib via DYLD_INSERT_LIBRARIES, which puts every later step
+      # under Rosetta, and Homebrew refuses to install into /opt/homebrew when
+      # running translated. Only the xcodebuild compile needs to be traced.
+      - name: Install XcodeGen and generate project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
         with:
@@ -88,8 +97,6 @@ jobs:
 
       - name: Build
         run: |
-          brew install xcodegen
-          xcodegen generate
           xcodebuild \
             -project usb-boop.xcodeproj \
             -scheme usb-boop \
