@@ -4,8 +4,7 @@ import USBBoopKit
 struct SettingsView: View {
     @Bindable var model: AppModel
 
-    // swiftlint:disable:next force_unwrapping
-    private static let gitHubURL = URL(string: "https://github.com/alexcatdad/usb-boop")!
+    private static let gitHubURL = URL(string: "https://github.com/alexcatdad/usb-boop")
 
     var body: some View {
         Form {
@@ -30,7 +29,9 @@ struct SettingsView: View {
             Section("About") {
                 LabeledContent("Version", value: Self.appVersion)
 
-                Link("View on GitHub", destination: Self.gitHubURL)
+                if let gitHubURL = Self.gitHubURL {
+                    Link("View on GitHub", destination: gitHubURL)
+                }
 
                 Text("usb-boop is free and open source under the MIT License.")
                     .font(.footnote)

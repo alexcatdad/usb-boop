@@ -36,10 +36,37 @@ if [[ ! -d "${app_path}" ]]; then
   exit 1
 fi
 
-# Ad-hoc sign so Gatekeeper doesn't flag the app as "damaged".
-# Replace with Developer ID signing when available.
-codesign --force --sign - "${app_path}"
-echo "Ad-hoc signed ${app_path}"
+# The build runs with CODE_SIGNING_ALLOWED=NO, so this is the only signature
+# the bundle gets. The entitlements must be passed explicitly or the App
+# Sandbox is silently dropped from the shipped app.
+#
+# Defaults to ad-hoc so Gatekeeper doesn't flag the app as "damaged". Set
+# CODESIGN_IDENTITY to a Developer ID Application identity to sign for real;
+# that is also the only case where Hardened Runtime can be enabled, because it
+# turns on library validation and an ad-hoc signature has no Team ID for the
+# embedded USBBoopKit.framework to match.
+sign_identity="${CODESIGN_IDENTITY:--}"
+sign_opts=(--force --sign "${sign_identity}")
+if [[ "${sign_identity}" != "-" ]]; then
+  sign_opts+=(--options runtime --timestamp)
+else
+  echo "warning: signing ad-hoc; Hardened Runtime and notarization are skipped" >&2
+fi
+
+# Sign inside-out: nested code first, then the bundle that contains it.
+codesign "${sign_opts[@]}" "${app_path}/Contents/Frameworks/USBBoopKit.framework/Versions/A"
+codesign "${sign_opts[@]}" \
+  --entitlements Sources/App/usb-boop.entitlements \
+  "${app_path}"
+echo "Signed ${app_path} with identity '${sign_identity}'"
+
+# Fail loudly if the shipped bundle lost its sandbox.
+if ! codesign --display --entitlements - --xml "${app_path}" 2>/dev/null \
+  | grep -q 'com.apple.security.app-sandbox'; then
+  echo "signed bundle is missing the App Sandbox entitlement" >&2
+  exit 1
+fi
+codesign --verify --strict --verbose=2 "${app_path}"
 
 rm -f "${artifact_path}"
 ditto -c -k --sequesterRsrc --keepParent "${app_path}" "${artifact_path}"

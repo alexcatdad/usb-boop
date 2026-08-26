@@ -44,9 +44,16 @@ targets:
         PRODUCT_NAME: usb-boop
         PRODUCT_MODULE_NAME: USBBoopApp
         INFOPLIST_FILE: Sources/App/Info.plist
+        # Hardened Runtime is applied at signing time, not here: it enables
+        # library validation, which an ad-hoc signature cannot satisfy for the
+        # embedded USBBoopKit.framework. See scripts/build_release_zip.sh.
+        CODE_SIGN_ENTITLEMENTS: Sources/App/usb-boop.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         MARKETING_VERSION: 0.0.0-dev
         CURRENT_PROJECT_VERSION: 1
+      configs:
+        Debug:
+          PRODUCT_NAME: usb-boop-dev
 
   USBBoopKitTests:
     type: bundle.unit-test

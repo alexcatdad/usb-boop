@@ -1,0 +1,24 @@
+version: 2
+
+updates:
+  # GitHub Actions are the only third-party dependency this project has —
+  # the app itself is deliberately zero-dependency (see CLAUDE.md).
+  # Actions are pinned to commit SHAs; Dependabot keeps those SHAs current.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    # Don't adopt a release the moment it is published. A compromised action
+    # release is usually caught and yanked within days, and nothing here is
+    # urgent enough to justify being the first consumer of a new SHA.
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+    commit-message:
+      prefix: "ci"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
