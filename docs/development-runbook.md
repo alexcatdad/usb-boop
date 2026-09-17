@@ -427,3 +427,19 @@ a real ad-hoc `.3` release, a modified executable, a mismatched version, path
 traversal, and an escaping symlink. Missing signing identity failed before any
 build/output creation. Independent review found no blockers; full application
 tests and CodeQL remain required on the PR head before squash merge.
+
+### Homebrew 7 local validation cleanup
+
+Do not use `brew untap --force` to clean up a temporary validation tap: Homebrew
+7 explicitly uninstalls matching installed packages first, and casks with the
+same token can match the real app even when loaded through a temporary tap.
+Prefer the existing ephemeral CI runner for full cask-loading validation.
+
+During this change's local validation, force-untapping `alexcatdad/caskcheck`
+removed the existing `2026.08.26.0` release. It was immediately restored using
+the unchanged original local `alexcatdad/tap` cask and cached archive (SHA-256
+`40b6e3bdb518a6b4e20e2604fc8d6e37c743b14d02200c1eb7dd4830b0515bcd`), with
+Homebrew auto-update and install cleanup disabled. Homebrew now reports the
+original version, `/Applications/usb-boop.app` is present, and deep/strict
+signature verification passes. No `zap` ran; preferences were retained. The
+running `~/Applications/usb-boop-dev.app` was unaffected. Alex was informed.
