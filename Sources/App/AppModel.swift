@@ -10,6 +10,7 @@ final class AppModel {
     private(set) var latestConnectedDevice: USBDevice?
     private(set) var history: [USBObservation] = []
     private(set) var notificationAuthorization: UserNotificationCoordinator.AuthorizationState = .notDetermined
+    private(set) var isRequestingNotificationAuthorization = false
     private(set) var notificationsEnabled: Bool {
         didSet {
             defaults.set(notificationsEnabled, forKey: Self.notificationsEnabledKey)
@@ -84,12 +85,13 @@ final class AppModel {
         }
     }
     var notificationAuthorizationSummary: String {
+        if isRequestingNotificationAuthorization { return "Waiting for notification permission…" }
         switch notificationAuthorization {
         case .authorized:
             return notificationsEnabled ? "Connection notifications are enabled." : "Connection notifications are off."
         case .denied: return "Notifications are disabled for usb-boop in System Settings → Notifications."
         case .notDetermined: return "Enable notifications to allow quiet connection banners."
-        case .failed: return "Could not check or request notification permission. Try enabling notifications again."
+        case .failed(let message): return "Could not enable notifications: \(message)"
         }
     }
 
@@ -104,6 +106,7 @@ final class AppModel {
     func stop() {
         hasStarted = false
         notifier = nil
+        isRequestingNotificationAuthorization = false
         notificationAuthorization = .notDetermined
         alertBatcher.cancel()
         monitor.stop()
@@ -123,14 +126,22 @@ final class AppModel {
         guard let notifier else { return }
         _ = await notifier.refreshAuthorizationState()
         guard hasStarted, self.notifier === notifier else { return }
-        notificationAuthorization = notifier.authorizationState
+        // A passive refresh must not hide why the user's last Enable action failed.
+        switch (notificationAuthorization, notifier.authorizationState) {
+        case (.failed, .notDetermined): break
+        default: notificationAuthorization = notifier.authorizationState
+        }
         if notificationAuthorization != .authorized { alertBatcher.cancel() }
     }
 
     /// Only UI actions call this method; restoring a saved preference never prompts.
     func setNotificationsEnabled(_ enabled: Bool) async {
         notificationsEnabled = enabled
-        guard enabled, let notifier else { return }
+        guard enabled, let notifier, !isRequestingNotificationAuthorization else { return }
+        isRequestingNotificationAuthorization = true
+        defer {
+            if self.notifier === notifier { isRequestingNotificationAuthorization = false }
+        }
         _ = await notifier.requestAuthorizationIfNeeded()
         guard hasStarted, self.notifier === notifier else { return }
         notificationAuthorization = notifier.authorizationState

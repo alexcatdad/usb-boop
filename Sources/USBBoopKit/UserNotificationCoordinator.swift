@@ -87,6 +87,10 @@ public final class UserNotificationCoordinator {
                 let granted = try await center.requestAuthorization(options: [.alert, .sound])
                 return granted ? .authorized : .denied
             } catch {
+                let failure = error as NSError
+                USBBoopLog.appModel.error(
+                    "Notification authorization failed: \(failure.domain, privacy: .public) code \(failure.code)"
+                )
                 return .failed(error.localizedDescription)
             }
         @unknown default:

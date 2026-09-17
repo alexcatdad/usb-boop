@@ -15,6 +15,7 @@ struct SettingsView: View {
                 Text(model.notificationAuthorizationSummary).font(.footnote).foregroundStyle(.secondary)
                 if model.notificationsEnabled, model.canRequestNotifications {
                     Button("Enable notifications") { Task { await model.setNotificationsEnabled(true) } }
+                        .disabled(model.isRequestingNotificationAuthorization)
                 }
                 Toggle("Play a sound", isOn: $model.notificationSoundEnabled)
                     .disabled(!model.notificationsEnabled)

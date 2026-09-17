@@ -1,5 +1,44 @@
 # Resume development
 
+## Notification permission debugging (2026-09-17)
+
+In the sandboxed ad-hoc Debug app, clicking Enable notifications reached
+`UNUserNotificationCenter.requestAuthorization` but returned immediately with an
+`UNErrorDomain` code 1: "Notifications are not allowed for this application."
+The original UI discarded its localized description. No permission dialog
+appeared; this was distinct from a user declining a displayed prompt.
+
+Expose the returned error in the menu and Settings, log only its domain/code,
+and show an in-progress message while preventing duplicate Enable requests.
+Pending state must be cleared on stop and protected from an older request's
+completion after restart. A passive refresh that still reports not-determined
+must preserve the last request error. Startup/activation refresh without prompting.
+
+Moving the identical ad-hoc-signed diagnostic app from
+`/tmp/usb-boop-notifications-derived/Build/Products/Debug/usb-boop-dev.app` to
+`~/Applications/usb-boop-dev.app` resolved authorization. Alex confirmed it
+worked, and native Settings inspection showed "Connection notifications are
+enabled." Neither its code/signature nor its sandbox/USB entitlements changed
+for this comparison. Use the stable Applications location for local interactive
+acceptance; do not launch the temporary build directly. This establishes the
+location-dependent failure on this host, not a universal rule for every macOS
+version. Inspect only this app's diagnostic logs when troubleshooting:
+
+```sh
+/usr/bin/log show --last 5m --style compact \
+  --predicate 'process == "usb-boop-dev" AND subsystem == "com.alexcatdad.usb-boop"'
+```
+
+Do not clear system notification preferences, reset permission databases, or
+add push-notification entitlements to debug local banners. Native authorization
+is verified; an actual connection banner after authorization remains unverified.
+The inspector times out while the app has only its menu-bar item and no open window.
+
+Local strict SwiftLint and all 126 tests pass, covering error detail, passive
+refresh, explicit retry, duplicate actions, and restart handling. Logs:
+`/tmp/usb-boop-notifications-lint.log` and
+`/tmp/usb-boop-notifications-tests.log`. This is not a release or notarization run.
+
 ## Inspect before changing code
 
 ```sh
@@ -200,8 +239,15 @@ debug_app=/tmp/usb-boop-menu-fix-derived/Build/Products/Debug/usb-boop-dev.app
 codesign --force --sign - "$debug_app/Contents/Frameworks/USBBoopKit.framework/Versions/A"
 codesign --force --sign - --entitlements Sources/App/usb-boop.entitlements "$debug_app"
 codesign --verify --deep --strict "$debug_app"
-open "$debug_app"
+installed_debug_app="$HOME/Applications/usb-boop-dev.app"
+mkdir -p "$HOME/Applications"
+# Quit an existing Debug instance before replacing its bundle.
+ditto "$debug_app" "$installed_debug_app"
+codesign --verify --deep --strict "$installed_debug_app"
+open "$installed_debug_app"
 ```
 
 Open the menu manually before attaching a native UI inspector: this accessory
 app may be unselectable by inspection tools when it has no visible windows.
+The temporary build directory is suitable for compilation, but notification
+acceptance on this host requires launching the copy in `~/Applications`.
