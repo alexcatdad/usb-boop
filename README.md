@@ -20,7 +20,7 @@
 
 ## Why
 
-Plugging in a USB device and wondering *"did it actually connect at full speed?"* shouldn't require digging through System Information. usb-boop lives in your menu bar, watches IOKit for attach events, and fires a notification with the device name and negotiated speed in under a second.
+Plugging in a USB device and wondering *"did it actually connect at full speed?"* shouldn't require digging through System Information. usb-boop lives in your menu bar, watches IOKit for attach events, and shows the device name and negotiated link speed. Optional quiet banners group connections arriving within a one-second window.
 
 Perfect for testing cables, hubs, and ports.
 
@@ -56,11 +56,13 @@ specific commit. Each release also publishes a `.sha256` checksum.
 
 - Lives in the menu bar with zero dock presence
 - Detects USB device connections in real time via IOKit
-- Shows a native macOS notification with device name and link speed
+- Offers quiet connection banners, with optional sound and grouped device connections
 - Displays all currently connected USB devices in a companion window
 - Color-coded speed display (green for USB 3.1/3.2, blue for USB 3.0, orange for USB 2.0)
 - Right-click any device to copy its info
-- Persists your notification and display preferences
+- Persists notification and display preferences; requests notification permission only when enabled
+- Keeps the last 50 connection observations in memory for the current session
+- Offers optional launch at login, with macOS approval status shown in Settings
 
 ### What link speed means
 
@@ -106,7 +108,8 @@ xcodebuild -project usb-boop.xcodeproj -scheme usb-boop \
   CODE_SIGNING_ALLOWED=NO test
 ```
 
-Debug builds are named `usb-boop-dev` so they don't conflict with the Homebrew install.
+Debug builds use `usb-boop-dev` and a separate bundle identifier, so preferences,
+notifications, and login registration are isolated from the Homebrew install.
 
 ### Development mode
 

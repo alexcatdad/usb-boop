@@ -117,3 +117,52 @@ from device acceptance.
 PR1 local validation: full Xcode tests, strict SwiftLint, actionlint, and
 shellcheck passed. Evidence: `/tmp/usb-boop-pr1-final.log`. No physical media
 access tests, logout, or sleep were performed.
+
+## Everyday usability acceptance
+
+New installations default to notifications and sound off. Existing notification
+preferences remain intact, but startup never prompts. Enable is an explicit
+user action. Denied permission shows System Settings guidance rather than
+repeated requests. Grouping uses a fixed one-second window; detach, disable,
+stop, or unreliable monitoring cancels affected queued/in-flight banners.
+
+History holds at most 50 serial-free observations in memory. Hiding hubs also
+filters history. Startup enumeration does not create history. Launch at login
+uses actual ServiceManagement status and only changes on explicit interaction.
+Debug bundle ID is `com.alexcatdad.usb-boop.dev`; Release retains its existing ID.
+
+Automated tests cover startup permissions, denial, permission changes, grouping,
+cancellation while authorization is suspended, monitor restart, history limits,
+privacy, login errors/pending approval and read-only refresh. A rendered menu
+check uses 30 devices and a long name to verify the 390-point width and bounded
+height. Optional render artifact (after building tests):
+
+```sh
+USB_BOOP_RENDER_ARTIFACTS=/tmp \
+DYLD_FRAMEWORK_PATH=/tmp/usb-boop-pr2-derived/Build/Products/Debug \
+xcrun xctest -XCTest USBBoopAppTests.MenuLayoutTests \
+  /tmp/usb-boop-pr2-derived/Build/Products/Debug/USBBoopAppTests.xctest
+```
+
+Local release packaging passed using `scripts/build_release_zip.sh`, including
+ad-hoc signature verification and sandbox entitlements. Artifact/log evidence:
+`/tmp/usb-boop-release-artifacts`, `/tmp/usb-boop-release-build.log`, and
+`/tmp/usb-boop-pr2-final.log`. This is not notarization or hardware acceptance.
+
+Still unverified: physical read-only/inaccessible media, rapid unplug/replug,
+sleep/wake, interactive notification delivery/denial, VoiceOver and keyboard
+navigation, and actual logout/login with the installed release. Native UI
+selection timed out through the available computer-use tool; static rendered
+layout was inspected instead. Do not log out the user's session to test startup.
+
+### Sandboxed metadata probe result
+
+A temporary helper app linked against the exact Release USBBoopKit framework,
+ad-hoc signed with the app's existing sandbox and USB entitlements, enumerated
+14 real devices and stopped cleanly. No initial device had a connectedAt time.
+Its speed counts matched `system_profiler SPUSBHostDataType -json` on macOS 27:
+5 at 12 Mbps, 5 at 480 Mbps, 1 at 5 Gbps, and 3 at 10 Gbps. Only counts were
+reported; no serials were exported and no volume contents were accessed. On older macOS,
+check `system_profiler -listDataTypes` for the supported USB report name.
+This proves sandboxed metadata enumeration, not physical reconnect, restricted
+media, sleep/wake, notification visibility, or login-session acceptance.
