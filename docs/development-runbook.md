@@ -324,3 +324,106 @@ workflow. The earlier accepted notarization applies only to its submitted build;
 it does not notarize subsequent CI artifacts. Report merge, publication, and
 notarization as separate outcomes. Menu-dismissal clarification and a native
 banner with the final icon remain manual acceptance follow-ups.
+
+## Local signed release
+
+Alex authorized local Developer ID signing and publication of the current app
+on 2026-09-17. Keep the Apple private key and notarization profile in Keychain.
+The already published `2026.09.17.3` archive remains unchanged; the first signed
+release is planned as `2026.09.17.4`. This is a packaging/distribution change,
+with no additional USB or filesystem access by the app.
+
+Merge the delivery workflow through a PR after all checks pass on its exact
+head. Source must be clean and on the reviewed `main` commit. Record the full
+commit, Xcode version, submission ID, final checksum, and verification results
+in the GitHub release notes. Do not export keys or put passwords in arguments.
+
+```sh
+git switch main
+git pull --ff-only origin main
+git status --porcelain
+git rev-parse HEAD
+xcodebuild -version
+security find-identity -v -p codesigning
+./scripts/next_calver.sh
+```
+
+Use the proposed version below; ensure `git status --porcelain` is empty and
+the release tag does not already exist. Build artifacts stay outside the repo:
+
+```sh
+release_version=2026.09.17.4
+release_root="/tmp/usb-boop-local-release-${release_version}"
+mkdir -p "$release_root/submission" "$release_root/final"
+CODESIGN_IDENTITY='Developer ID Application: Alexandru Alexandrescu (CX6D6KGCT5)' \
+DERIVED_DATA_PATH="$release_root/DerivedData" \
+  ./scripts/build_release_zip.sh "$release_version" "$release_root/submission" \
+  > "$release_root/build.log" 2>&1
+git diff --exit-code
+xcrun notarytool submit "$release_root/submission/usb-boop-macos-arm64.zip" \
+  --keychain-profile usb-boop-notary --output-format json \
+  > "$release_root/submission.json"
+submission_id=$(jq -r .id "$release_root/submission.json")
+xcrun notarytool info "$submission_id" --keychain-profile usb-boop-notary \
+  --output-format json > "$release_root/status.json"
+```
+
+Submit once. If pending, query the same ID later; do not repeatedly upload.
+If interrupted, recover the ID from `submission.json` or `notarytool history`.
+Only continue after `status.json` says `Accepted`. Inspect Apple's log:
+
+```sh
+jq -e '.status == "Accepted"' "$release_root/status.json"
+xcrun notarytool log "$submission_id" --keychain-profile usb-boop-notary \
+  "$release_root/notary-log.json"
+signed_app="$release_root/DerivedData/Build/Products/Release/usb-boop.app"
+xcrun stapler staple "$signed_app"
+ditto -c -k --sequesterRsrc --keepParent "$signed_app" \
+  "$release_root/final/usb-boop-macos-arm64.zip"
+(cd "$release_root/final" && shasum -a 256 usb-boop-macos-arm64.zip \
+  > usb-boop-macos-arm64.sha256)
+./scripts/verify_release_artifact.sh \
+  "$release_root/final/usb-boop-macos-arm64.zip" "$release_version"
+```
+
+The verifier checks a fresh extraction with no quarantine bypass and does not
+launch the app or access devices. Keep manual hardware/UI acceptance separate.
+After verification, create an annotated tag at the recorded source commit,
+upload the two final files to a draft release, download and verify them again,
+then publish. Never use `--clobber`, replace a published file, or force a tag.
+
+```sh
+release_tag="v${release_version}"
+git tag -a "$release_tag" -m "Release $release_tag: locally signed and notarized"
+git push origin "refs/tags/$release_tag"
+# Write release-notes.md with source, toolchain, submission ID, checksum,
+# validation, and any remaining manual acceptance limitations first.
+gh release create "$release_tag" "$release_root/final/usb-boop-macos-arm64.zip" \
+  "$release_root/final/usb-boop-macos-arm64.sha256" --verify-tag --draft \
+  --title "$release_tag" --notes-file "$release_root/release-notes.md"
+gh release download "$release_tag" --dir "$release_root/download" \
+  --pattern usb-boop-macos-arm64.zip --pattern usb-boop-macos-arm64.sha256
+(cd "$release_root/download" && shasum -a 256 -c usb-boop-macos-arm64.sha256)
+./scripts/verify_release_artifact.sh \
+  "$release_root/download/usb-boop-macos-arm64.zip" "$release_version"
+gh release edit "$release_tag" --draft=false --latest
+gh run list --workflow release.yml -L 3
+```
+
+Wait for both release verification and Homebrew delivery to pass. Read the
+remote tap cask and verify version, URL, SHA, and absence of quarantine removal.
+Do not install over the user's release app or change Debug preferences just to
+test publishing. The release workflow can be retried with `gh workflow run
+release.yml -f tag="$release_tag"` after diagnosing a failure.
+
+Local gate acceptance: the earlier notarized `2026.09.17.1` artifact passes
+the new verifier (identity, exact entitlements, architecture, ticket, and
+Gatekeeper). This proves the verifier accepts a real Apple-approved package;
+the new release still needs its own submission and recorded evidence.
+
+Pre-merge validation for this delivery change: strict SwiftLint, ShellCheck,
+actionlint, regular zizmor, and whitespace checks passed. The verifier rejected
+a real ad-hoc `.3` release, a modified executable, a mismatched version, path
+traversal, and an escaping symlink. Missing signing identity failed before any
+build/output creation. Independent review found no blockers; full application
+tests and CodeQL remain required on the PR head before squash merge.

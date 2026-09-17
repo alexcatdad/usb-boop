@@ -38,25 +38,22 @@ brew install --cask alexcatdad/tap/usb-boop
 
 Or download the latest `usb-boop-macos-arm64.zip` from [Releases](https://github.com/alexcatdad/usb-boop/releases/latest), unzip, and drag to Applications.
 
-> **Note:** usb-boop is not yet signed with a Developer ID certificate. Homebrew handles this automatically, but if you download manually you may need to right-click the app and choose **Open** on first launch, or run:
-> ```sh
-> xattr -rd com.apple.quarantine /Applications/usb-boop.app
-> ```
-> Developer ID signing is planned for an upcoming release.
+Starting with `2026.09.17.4`, releases are signed with Developer ID and notarized
+by Apple. Open the app normally; no quarantine removal is needed.
 
 ### Verifying a download
 
-Because releases aren't notarized, macOS can't tell you who built them. Each
-release artifact carries a
-[build provenance attestation](https://docs.github.com/en/actions/concepts/security/artifact-attestations)
-instead, which you can check against the source:
+macOS verifies the Developer ID signature and notarization when opening the app.
+Each release also publishes a checksum. Download the ZIP and `.sha256` file into
+the same directory, then check:
 
 ```sh
-gh attestation verify usb-boop-macos-arm64.zip --repo alexcatdad/usb-boop
+shasum -a 256 -c usb-boop-macos-arm64.sha256
 ```
 
-That confirms the archive was built by this repository's release workflow at a
-specific commit. Each release also publishes a `.sha256` checksum.
+Signing happens locally on the maintainer's Mac; private keys never enter
+GitHub Actions. These local packages do not carry a GitHub build-provenance
+attestation. See the [release runbook](docs/development-runbook.md#local-signed-release).
 
 ## What it does
 
@@ -142,12 +139,15 @@ Tests/
 
 ## Release model
 
-Releases follow [CalVer](https://calver.org/) (`YYYY.MM.DD.N`). Every push to `main` that isn't a docs/ci/chore commit triggers a release via GitHub Actions, which:
+Releases follow [CalVer](https://calver.org/) (`YYYY.MM.DD.N`). After a reviewed
+commit passes CI:
 
-1. Tags the commit
-2. Builds and signs the `.app` bundle
-3. Creates a GitHub Release with the artifact and SHA256 checksum
-4. Updates the Homebrew cask in [`alexcatdad/homebrew-tap`](https://github.com/alexcatdad/homebrew-tap)
+1. The maintainer builds and signs the app locally, then notarizes it with Apple.
+2. The verified package and checksum are published in a new GitHub Release.
+3. GitHub independently verifies the download before updating the Homebrew cask
+   in [`alexcatdad/homebrew-tap`](https://github.com/alexcatdad/homebrew-tap).
+
+Merging to `main` runs checks but does not publish a binary.
 
 ## License
 

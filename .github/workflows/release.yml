@@ -1,145 +1,114 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main
-    tags:
-      - 'v*'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing published stable release tag to verify and deliver
+        required: true
+        type: string
 
 permissions: {}
 
+# Serialize tap writes. A later release is rechecked before every push, and the
+# current cask version prevents an older recovery run from downgrading users.
+concurrency:
+  group: release-homebrew-delivery
+  cancel-in-progress: false
+
 jobs:
-  release:
+  verify-release:
+    name: Verify locally signed release
     runs-on: macos-26
+    timeout-minutes: 15
     permissions:
-      # Push the tag and publish the release.
-      contents: write
-      # Mint the OIDC token Sigstore signs the build provenance with.
-      id-token: write
-      # Persist the provenance attestation for the release artifact.
-      attestations: write
-    if: github.actor != 'github-actions[bot]' || !startsWith(github.ref, 'refs/tags/')
+      contents: read
     outputs:
-      tag: ${{ steps.version.outputs.tag }}
-      released: ${{ steps.version.outputs.skip != 'true' }}
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
+      archive: ${{ steps.verify.outputs.archive }}
 
     steps:
-      # Credentials are persisted deliberately: the "Create tag" step below
-      # pushes back to this repository.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 # zizmor: ignore[artipacked]
+      - name: Check out trusted verification scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: main
           fetch-depth: 0
+          persist-credentials: false
 
-      - name: Select Xcode
-        run: |
-          sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
-          xcodebuild -version
-
-      - name: Install XcodeGen
-        run: |
-          # Pin to a known-good version for build reproducibility
-          brew install xcodegen
-          xcodegen --version
-
-      - name: Determine version
-        id: version
-        # SECURITY: Commit message MUST be passed via env to prevent shell injection.
-        # Never use ${{ github.event.head_commit.message }} directly in a run: block.
-        env:
-          HEAD_MESSAGE: ${{ github.event.head_commit.message }}
-        run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            {
-              echo "tag=${GITHUB_REF#refs/tags/}"
-              echo "version=${GITHUB_REF#refs/tags/v}"
-              echo "created_new=false"
-              echo "skip=false"
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if echo "$HEAD_MESSAGE" | head -1 | grep -qE '^(docs|ci|chore|test|style)(\(.+\))?:'; then
-            echo "Non-release commit type. Skipping."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          while IFS='=' read -r key value; do
-            echo "${key}=${value}" >> "$GITHUB_OUTPUT"
-          done < <(./scripts/next_calver.sh)
-
-          echo "skip=false" >> "$GITHUB_OUTPUT"
-
-      - name: Create tag
-        if: steps.version.outputs.skip != 'true' && steps.version.outputs.created_new == 'true' && !startsWith(github.ref, 'refs/tags/')
-        env:
-          NEW_TAG: ${{ steps.version.outputs.tag }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
-          git push origin "$NEW_TAG"
-
-      - name: Run tests
-        if: steps.version.outputs.skip != 'true'
-        run: |
-          xcodegen generate
-          xcodebuild \
-            -project usb-boop.xcodeproj \
-            -scheme usb-boop \
-            -destination 'platform=macOS,arch=arm64' \
-            CODE_SIGNING_ALLOWED=NO \
-            test
-
-      - name: Build release artifact
-        if: steps.version.outputs.skip != 'true'
-        # The version derives from a tag name, so pass it via env rather than
-        # interpolating it into the script body.
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          mkdir -p dist
-          ./scripts/build_release_zip.sh "$VERSION" dist
-
-      # The app is ad-hoc signed and cannot be notarized, so macOS cannot tell
-      # users who built it. A SLSA provenance attestation recovers that: anyone
-      # can run `gh attestation verify` against the zip to confirm it came from
-      # this workflow, at this commit. Free for public repositories.
-      - name: Attest build provenance
-        if: steps.version.outputs.skip != 'true'
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
-        with:
-          subject-path: dist/usb-boop-macos-arm64.zip
-          # Storage records need a permission this job deliberately does not
-          # request; the attestation itself is unaffected.
-          create-storage-record: false
-
-      # Uses the preinstalled gh CLI rather than a third-party action, to keep
-      # one less external dependency in the path that publishes signed binaries.
-      - name: Create release
-        if: steps.version.outputs.skip != 'true'
+      - name: Validate published release and source
+        id: release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.version.outputs.tag }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
-          gh release create "$TAG" \
-            dist/usb-boop-macos-arm64.zip \
-            dist/usb-boop-macos-arm64.sha256 \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "$TAG" \
-            --generate-notes
+          [[ "$RELEASE_TAG" =~ ^v[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+$ ]] || {
+            echo "Expected a vYYYY.MM.DD.N release tag." >&2
+            exit 1
+          }
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > release.json
+          jq -e --arg tag "$RELEASE_TAG" \
+            '.tag_name == $tag and .draft == false and .prerelease == false and .published_at != null' \
+            release.json > /dev/null
+          latest=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name)
+          [[ "$latest" == "$RELEASE_TAG" ]] || {
+            echo "Only the latest stable release can update Homebrew." >&2
+            exit 1
+          }
+          git fetch origin main "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+          git merge-base --is-ancestor "refs/tags/$RELEASE_TAG^{commit}" origin/main
+          {
+            echo "tag=$RELEASE_TAG"
+            echo "version=${RELEASE_TAG#v}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Download and verify published artifact
+        id: verify
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern usb-boop-macos-arm64.zip \
+            --pattern usb-boop-macos-arm64.sha256 --dir assets
+          # Validate the sidecar format before allowing it to select a file.
+          [[ $(wc -l < assets/usb-boop-macos-arm64.sha256 | tr -d ' ') == 1 ]]
+          LC_ALL=C grep -Eq '^[0-9a-f]{64}  usb-boop-macos-arm64\.zip$' \
+            assets/usb-boop-macos-arm64.sha256
+          (cd assets && shasum -a 256 -c usb-boop-macos-arm64.sha256)
+          ./scripts/verify_release_artifact.sh assets/usb-boop-macos-arm64.zip "$VERSION"
+          echo "archive=$(shasum -a 256 assets/usb-boop-macos-arm64.zip | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
   update-homebrew:
     name: Update Homebrew Tap
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
-    needs: release
-    if: needs.release.outputs.released == 'true'
+    needs: verify-release
     environment: action-runners
 
     steps:
+      - name: Download the verified release archive
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.verify-release.outputs.tag }}
+          VERIFIED_SHA: ${{ needs.verify-release.outputs.archive }}
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern usb-boop-macos-arm64.zip --dir assets
+          [[ "$VERIFIED_SHA" =~ ^[0-9a-f]{64}$ ]]
+          printf '%s  %s\n' "$VERIFIED_SHA" assets/usb-boop-macos-arm64.zip | sha256sum -c -
+
+      - name: Check out usb-boop
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
       - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
@@ -148,9 +117,6 @@ jobs:
           private-key: ${{ secrets.APP_SECRET }}
           owner: ${{ github.repository_owner }}
           repositories: homebrew-tap
-          # Without an explicit permission-* input the token inherits every
-          # permission the App installation has. All this job does is commit
-          # the updated cask and README to homebrew-tap.
           permission-contents: write
 
       - name: Get GitHub App user ID
@@ -160,34 +126,7 @@ jobs:
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
         run: echo "user-id=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
 
-      - name: Download release asset
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.release.outputs.tag }}
-        run: gh release download "$TAG" --repo "${{ github.repository }}" --pattern 'usb-boop-macos-arm64.zip' --dir assets
-
-      - name: Verify artifact integrity
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.release.outputs.tag }}
-        run: |
-          gh release download "$TAG" \
-            --repo "${{ github.repository }}" \
-            --pattern 'usb-boop-macos-arm64.sha256' \
-            --dir assets
-          cd assets && sha256sum -c usb-boop-macos-arm64.sha256
-
-      - name: Compute SHA256 checksum
-        id: sha
-        run: echo "archive=$(sha256sum assets/usb-boop-macos-arm64.zip | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-
-      - name: Check out usb-boop
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      # Credentials are persisted deliberately: the "Commit and push" step
-      # below pushes the updated cask to homebrew-tap.
+      # Credentials are persisted deliberately for the final tap commit/push.
       - name: Check out homebrew-tap
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 # zizmor: ignore[artipacked]
         with:
@@ -195,22 +134,29 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           path: homebrew-tap
 
-      - name: Strip version prefix
-        id: ver
+      - name: Reject tap version downgrade
         env:
-          TAG: ${{ needs.release.outputs.tag }}
-        run: echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          VERSION: ${{ needs.verify-release.outputs.version }}
+        run: |
+          [[ "$VERSION" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+$ ]]
+          if [[ -f homebrew-tap/Casks/usb-boop.rb ]]; then
+            current=$(sed -n 's/^  version "\([^"]*\)"$/\1/p' homebrew-tap/Casks/usb-boop.rb)
+            [[ "$current" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+$ ]]
+            newest=$(printf '%s\n%s\n' "$current" "$VERSION" | sort -V | tail -n 1)
+            [[ "$newest" == "$VERSION" ]] || {
+              echo "Refusing to downgrade the Homebrew cask." >&2
+              exit 1
+            }
+          fi
 
       - name: Update cask
         env:
-          VERSION: ${{ steps.ver.outputs.version }}
-          SHA_ARCHIVE: ${{ steps.sha.outputs.archive }}
+          VERSION: ${{ needs.verify-release.outputs.version }}
+          SHA_ARCHIVE: ${{ needs.verify-release.outputs.archive }}
         run: |
           ./scripts/update_homebrew_tap.sh \
-            homebrew-tap \
-            "${VERSION}" \
-            "${SHA_ARCHIVE}" \
-            "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/usb-boop-macos-arm64.zip"
+            homebrew-tap "$VERSION" "$SHA_ARCHIVE" \
+            "https://github.com/$GITHUB_REPOSITORY/releases/download/v${VERSION}/usb-boop-macos-arm64.zip"
 
       - name: Update README
         env:
@@ -266,10 +212,17 @@ jobs:
       - name: Commit and push
         working-directory: homebrew-tap
         env:
-          VERSION: ${{ steps.ver.outputs.version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.verify-release.outputs.tag }}
+          VERSION: ${{ needs.verify-release.outputs.version }}
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
           USER_ID: ${{ steps.get-user-id.outputs.user-id }}
         run: |
+          latest=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq .tag_name)
+          [[ "$latest" == "$TAG" ]] || {
+            echo "A newer stable release is available; refusing a stale tap update." >&2
+            exit 1
+          }
           git config user.name "${APP_SLUG}[bot]"
           git config user.email "${USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
           git add Casks/usb-boop.rb README.md
