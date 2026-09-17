@@ -61,7 +61,7 @@ public final class UserNotificationCoordinator {
         }
 
         let request = UNNotificationRequest(
-            identifier: "usb-boop.\(device.id).\(Int(device.connectedAt.timeIntervalSince1970))",
+            identifier: "usb-boop.\(UUID().uuidString)",
             content: content,
             trigger: nil
         )

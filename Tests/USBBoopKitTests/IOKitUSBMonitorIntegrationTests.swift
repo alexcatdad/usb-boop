@@ -4,6 +4,16 @@ import XCTest
 @MainActor
 final class IOKitUSBMonitorIntegrationTests: XCTestCase {
 
+    func test_registryReleasesRegistrationsWhenOwnerIsDropped() {
+        weak var weakRegistry: IOKitUSBRegistry?
+        autoreleasepool {
+            let registry = IOKitUSBRegistry()
+            weakRegistry = registry
+            _ = registry.start()
+        }
+        XCTAssertNil(weakRegistry)
+    }
+
     func test_startAndStop_lifecycle() async throws {
         let monitor = IOKitUSBMonitor()
         var snapshotCount = 0

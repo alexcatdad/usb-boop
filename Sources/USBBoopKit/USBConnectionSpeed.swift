@@ -10,6 +10,8 @@ public enum USBConnectionSpeed: Int, CaseIterable, Codable, Sendable {
     case usb3Gen2x2
     case other
 
+    /// USBSpeed uses tIOUSBHostConnectionSpeed (IOUSBHostFamilyDefinitions.h),
+    /// not the legacy IOUSBDevice "Device Speed" constants.
     public init(registryValue: Int?) {
         switch registryValue {
         case 2:
@@ -34,7 +36,7 @@ public enum USBConnectionSpeed: Int, CaseIterable, Codable, Sendable {
     public var displayLabel: String {
         switch self {
         case .unknown:
-            return "Speed unavailable"
+            return "Link speed unavailable"
         case .usb1Low:
             return "1.5 Mbps"
         case .usb1Full:
@@ -48,7 +50,7 @@ public enum USBConnectionSpeed: Int, CaseIterable, Codable, Sendable {
         case .usb3Gen2x2:
             return "20 Gbps"
         case .other:
-            return "Unclassified high-speed path"
+            return "Link speed unavailable"
         }
     }
 
@@ -69,7 +71,7 @@ public enum USBConnectionSpeed: Int, CaseIterable, Codable, Sendable {
         case .usb3Gen2x2:
             return "USB 3.2 Gen 2x2"
         case .other:
-            return "USB high-speed path"
+            return "Unclassified USB connection speed"
         }
     }
 }

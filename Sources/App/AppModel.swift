@@ -6,6 +6,7 @@ import USBBoopKit
 @MainActor
 @Observable
 final class AppModel {
+    var monitoringStatus: USBMonitoringStatus = .stopped
     var currentDevices: [USBDevice] = []
     var latestConnectedDevice: USBDevice?
     var notificationsEnabled: Bool {
@@ -82,7 +83,28 @@ final class AppModel {
         monitor.refresh()
     }
 
+    func stop() {
+        monitor.stop()
+        hasStarted = false
+    }
+
+    func reconcileAfterWake() {
+        monitor.reconcileAfterWake()
+    }
+
+    var monitoringMessage: String? {
+        monitoringStatus == .monitoring ? nil : monitoringStatus.message
+    }
+
+    var latestConnectionStatus: String? {
+        guard let device = latestConnectedDevice else { return nil }
+        guard monitoringStatus.isSnapshotReliable else { return "Connection unconfirmed" }
+        return currentDevices.contains { $0.id == device.id } ? "Connected" : "Disconnected"
+    }
+
     private func bindMonitor() {
+        monitor.onStatusChanged = { [weak self] status in self?.monitoringStatus = status }
+
         monitor.onDevicesChanged = { [weak self] devices in
             guard let self else { return }
             USBBoopLog.appModel.notice("Received device snapshot with \(devices.count) devices")

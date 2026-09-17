@@ -125,7 +125,7 @@ final class UserNotificationCoordinatorTests: XCTestCase {
 
         XCTAssertEqual(mock.addedRequests.count, 1)
         let request = try XCTUnwrap(mock.addedRequests.first)
-        XCTAssertTrue(request.identifier.hasPrefix("usb-boop.42."))
+        XCTAssertTrue(request.identifier.hasPrefix("usb-boop."))
         XCTAssertEqual(request.content.title, "USB Connected")
         XCTAssertEqual(request.content.body, device.notificationBody)
         XCTAssertEqual(request.content.subtitle, device.speed.technicalLabel)

@@ -19,7 +19,7 @@ final class FixtureUSBMonitorTests: XCTestCase {
         XCTAssertEqual(receivedDevices?.first?.name, "Test Device")
     }
 
-    func test_start_firesAttachedForNewest() {
+    func test_start_doesNotInventAnAttachEvent() {
         let devices = [
             USBDevice(id: 1, name: "First", speed: .usb2High),
             USBDevice(id: 2, name: "Second", speed: .usb3Gen1),
@@ -31,7 +31,7 @@ final class FixtureUSBMonitorTests: XCTestCase {
 
         monitor.start()
 
-        XCTAssertEqual(attachedDevice?.name, "First")
+        XCTAssertNil(attachedDevice)
     }
 
     func test_start_emptyDevices_noAttached() {

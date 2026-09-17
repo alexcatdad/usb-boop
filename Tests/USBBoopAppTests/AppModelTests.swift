@@ -101,7 +101,7 @@ final class AppModelTests: XCTestCase {
         let fixture = FixtureUSBMonitor()
         let model = makeModel(monitor: fixture)
         // Trigger monitor callbacks directly (bindMonitor already wired in init)
-        fixture.start()
+        fixture.onDeviceAttached?(PreviewFixtures.connectedDevices[0])
         let device = try XCTUnwrap(model.latestConnectedDevice)
         XCTAssertEqual(model.latestResultTitle, device.notificationBody)
     }
@@ -109,7 +109,7 @@ final class AppModelTests: XCTestCase {
     func test_latestResultDetail_withDevice() throws {
         let fixture = FixtureUSBMonitor()
         let model = makeModel(monitor: fixture)
-        fixture.start()
+        fixture.onDeviceAttached?(PreviewFixtures.connectedDevices[0])
         let device = try XCTUnwrap(model.latestConnectedDevice)
         XCTAssertEqual(model.latestResultDetail, device.detailSummary)
     }
@@ -124,19 +124,18 @@ final class AppModelTests: XCTestCase {
         XCTAssertEqual(model.currentDevices.count, PreviewFixtures.connectedDevices.count)
     }
 
-    func test_fixtureStart_setsLatestConnectedDevice() {
+    func test_fixtureStart_doesNotInventAttachment() {
         let fixture = FixtureUSBMonitor()
         let model = makeModel(monitor: fixture)
         fixture.start()
-        XCTAssertNotNil(model.latestConnectedDevice)
+        XCTAssertNil(model.latestConnectedDevice)
     }
 
-    func test_fixtureStart_latestDeviceIsFirst() {
+    func test_fixtureStart_keepsLatestResultEmpty() {
         let fixture = FixtureUSBMonitor()
         let model = makeModel(monitor: fixture)
         fixture.start()
-        // FixtureUSBMonitor fires onDeviceAttached with devices.first
-        XCTAssertEqual(model.latestConnectedDevice, PreviewFixtures.connectedDevices.first)
+        XCTAssertNil(model.latestConnectedDevice)
     }
 
     func test_fixtureStart_isIdempotent() {
@@ -169,7 +168,7 @@ final class AppModelTests: XCTestCase {
         let model = makeModel(monitor: fixture)
         fixture.start()
         XCTAssertEqual(model.currentDevices.count, 1)
-        XCTAssertEqual(model.latestConnectedDevice, device)
+        XCTAssertNil(model.latestConnectedDevice)
     }
 
     // MARK: - Persistence
@@ -242,7 +241,7 @@ final class AppModelTests: XCTestCase {
     func test_onDeviceAttached_updatesLatestDevice() {
         let fixture = FixtureUSBMonitor()
         let model = makeModel(monitor: fixture)
-        fixture.start()
+        fixture.onDeviceAttached?(PreviewFixtures.connectedDevices[0])
         XCTAssertNotNil(model.latestConnectedDevice)
     }
 
@@ -261,7 +260,7 @@ final class AppModelTests: XCTestCase {
         let model = makeModel(mockCenter: mock)
         model.start()
         XCTAssertFalse(model.currentDevices.isEmpty)
-        XCTAssertNotNil(model.latestConnectedDevice)
+        XCTAssertNil(model.latestConnectedDevice)
     }
 
     func test_start_isIdempotent() {
@@ -315,15 +314,14 @@ final class AppModelTests: XCTestCase {
 
     // MARK: - Notification sending via start()
 
-    func test_start_withNotificationsEnabled_sendsNotification() async throws {
+    func test_start_withNotificationsEnabled_doesNotNotifyExistingDevices() async throws {
         let mock = AppTestMockCenter()
         mock.mockStatus = .authorized
         let model = makeModel(mockCenter: mock)
         model.notificationsEnabled = true
         model.start()
-        // FixtureUSBMonitor fires onDeviceAttached during start
         try await Task.sleep(for: .milliseconds(100))
-        XCTAssertFalse(mock.addedRequests.isEmpty, "Should have sent a notification for the attached device")
+        XCTAssertTrue(mock.addedRequests.isEmpty, "Startup must not invent attachment notifications")
     }
 
     func test_start_withNotificationsDisabled_doesNotSendNotification() async throws {

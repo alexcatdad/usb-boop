@@ -5,29 +5,32 @@ public final class FixtureUSBMonitor: USBMonitoring {
     public var onDevicesChanged: (@MainActor ([USBDevice]) -> Void)?
     public var onDeviceAttached: (@MainActor (USBDevice) -> Void)?
 
+    public var onDeviceDetached: (@MainActor (USBDevice) -> Void)?
+    public var onStatusChanged: (@MainActor (USBMonitoringStatus) -> Void)?
+    public var onObservation: (@MainActor (USBObservation) -> Void)?
+    public private(set) var status: USBMonitoringStatus = .stopped
     private let devices: [USBDevice]
 
-    public init(devices: [USBDevice] = PreviewFixtures.connectedDevices) {
-        self.devices = devices
-    }
+    public init(devices: [USBDevice] = PreviewFixtures.connectedDevices) { self.devices = devices }
 
     public func start() {
-        USBBoopLog.usbMonitor.notice("Starting fixture USB monitor with \(self.devices.count) devices")
+        guard status == .stopped else { return }
+        status = .monitoring
+        onStatusChanged?(status)
         onDevicesChanged?(devices)
-
-        if let newest = devices.first {
-            USBBoopLog.usbMonitor.notice(
-                "Fixture attached device: \(newest.name, privacy: .public) at \(newest.speed.displayLabel, privacy: .public)"
-            )
-            onDeviceAttached?(newest)
-        }
     }
 
-    public func stop() {}
+    public func stop() {
+        status = .stopped
+        onStatusChanged?(status)
+    }
 
     public func refresh() {
-        USBBoopLog.usbMonitor.debug("Refreshing fixture USB devices")
-        onDevicesChanged?(devices)
+        if status == .stopped { start() } else { onDevicesChanged?(devices) }
+    }
+
+    public func reconcileAfterWake() {
+        if status != .stopped { refresh() }
     }
 }
 
@@ -41,7 +44,7 @@ public enum PreviewFixtures {
             productID: 0x12AB,
             locationID: 0x01100000,
             speed: .usb3Gen2,
-            connectedAt: .now
+            firstSeenAt: .now
         ),
         USBDevice(
             id: 202,
@@ -51,7 +54,7 @@ public enum PreviewFixtures {
             productID: 0x61F5,
             locationID: 0x01200000,
             speed: .usb3Gen2,
-            connectedAt: .now.addingTimeInterval(-45)
+            firstSeenAt: .now.addingTimeInterval(-45)
         ),
     ]
 }
