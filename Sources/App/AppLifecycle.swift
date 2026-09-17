@@ -15,6 +15,10 @@ final class AppLifecycle: NSObject, NSApplicationDelegate {
         model?.reconcileAfterWake()
     }
 
+    func applicationDidBecomeActive(_ notification: Notification) {
+        model?.becameActive()
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         NSWorkspace.shared.notificationCenter.removeObserver(self)
         model?.stop()

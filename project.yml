@@ -54,6 +54,7 @@ targets:
       configs:
         Debug:
           PRODUCT_NAME: usb-boop-dev
+          PRODUCT_BUNDLE_IDENTIFIER: com.alexcatdad.usb-boop.dev
 
   USBBoopKitTests:
     type: bundle.unit-test

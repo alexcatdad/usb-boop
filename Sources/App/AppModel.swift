@@ -1,165 +1,175 @@
 import Foundation
 import Observation
-import OSLog
 import USBBoopKit
 
 @MainActor
 @Observable
 final class AppModel {
-    var monitoringStatus: USBMonitoringStatus = .stopped
-    var currentDevices: [USBDevice] = []
-    var latestConnectedDevice: USBDevice?
-    var notificationsEnabled: Bool {
+    private(set) var monitoringStatus: USBMonitoringStatus = .stopped
+    private(set) var currentDevices: [USBDevice] = []
+    private(set) var latestConnectedDevice: USBDevice?
+    private(set) var history: [USBObservation] = []
+    private(set) var notificationAuthorization: UserNotificationCoordinator.AuthorizationState = .notDetermined
+    private(set) var notificationsEnabled: Bool {
         didSet {
             defaults.set(notificationsEnabled, forKey: Self.notificationsEnabledKey)
+            if !notificationsEnabled { alertBatcher.cancel() }
         }
+    }
+    var notificationSoundEnabled: Bool {
+        didSet { defaults.set(notificationSoundEnabled, forKey: Self.notificationSoundEnabledKey) }
     }
     var keepLatestResultPinned: Bool {
-        didSet {
-            defaults.set(keepLatestResultPinned, forKey: Self.keepLatestResultPinnedKey)
-        }
+        didSet { defaults.set(keepLatestResultPinned, forKey: Self.keepLatestResultPinnedKey) }
     }
-    var notificationAuthorizationSummary = "Checking notification permission…"
     var showHubs: Bool {
-        didSet {
-            defaults.set(showHubs, forKey: Self.showHubsKey)
-        }
+        didSet { defaults.set(showHubs, forKey: Self.showHubsKey) }
     }
 
-    var visibleDevices: [USBDevice] {
-        showHubs ? currentDevices : currentDevices.filter { !$0.isHub }
-    }
-
+    let loginItem: LoginItemController
     private let monitor: any USBMonitoring
     private let makeNotifier: @MainActor @Sendable () -> UserNotificationCoordinator
     private var notifier: UserNotificationCoordinator?
     private let defaults: UserDefaults
+    private let alertWait: ConnectionAlertBatcher.Wait
     private var hasStarted = false
+    private var alertedConnections: Set<UInt64> = []
+    @ObservationIgnored private lazy var alertBatcher = ConnectionAlertBatcher(wait: alertWait) { [weak self] devices in
+        guard let self, self.hasStarted, self.notificationsEnabled, let notifier = self.notifier else { return }
+        _ = await notifier.sendConnectionNotification(for: devices, soundEnabled: self.notificationSoundEnabled)
+        guard self.hasStarted, self.notifier === notifier else { return }
+        self.notificationAuthorization = notifier.authorizationState
+    }
 
     static let notificationsEnabledKey = "notificationsEnabled"
+    static let notificationSoundEnabledKey = "notificationSoundEnabled"
     static let keepLatestResultPinnedKey = "keepLatestResultPinned"
     static let showHubsKey = "showHubs"
 
     init(
         monitor: any USBMonitoring = USBMonitorFactory.makeMonitor(),
         makeNotifier: @escaping @MainActor @Sendable () -> UserNotificationCoordinator = { UserNotificationCoordinator() },
-        defaults: UserDefaults = .standard
+        defaults: UserDefaults = .standard,
+        loginItem: LoginItemController = LoginItemController(),
+        alertWait: @escaping ConnectionAlertBatcher.Wait = { try await Task.sleep(for: .seconds(1)) }
     ) {
         self.monitor = monitor
         self.makeNotifier = makeNotifier
         self.defaults = defaults
-        self.notificationsEnabled = defaults.object(forKey: Self.notificationsEnabledKey) as? Bool ?? true
+        self.loginItem = loginItem
+        self.alertWait = alertWait
+        self.notificationsEnabled = defaults.object(forKey: Self.notificationsEnabledKey) as? Bool ?? false
+        self.notificationSoundEnabled = defaults.bool(forKey: Self.notificationSoundEnabledKey)
         self.keepLatestResultPinned = defaults.object(forKey: Self.keepLatestResultPinnedKey) as? Bool ?? true
-        self.showHubs = defaults.object(forKey: Self.showHubsKey) as? Bool ?? false
-
+        self.showHubs = defaults.bool(forKey: Self.showHubsKey)
         bindMonitor()
     }
 
-    var latestResultTitle: String {
-        latestConnectedDevice?.notificationBody ?? "Waiting for a USB device"
+    var visibleDevices: [USBDevice] { showHubs ? currentDevices : currentDevices.filter { !$0.isHub } }
+    var visibleHistory: [USBObservation] { showHubs ? history : history.filter { !$0.device.isHub } }
+    var monitoringMessage: String? { monitoringStatus == .monitoring ? nil : monitoringStatus.message }
+    var emptyDevicesMessage: String {
+        guard monitoringStatus.isSnapshotReliable else { return "USB device information is unavailable or incomplete." }
+        return currentDevices.isEmpty ? "No USB devices detected." : "USB hubs are hidden."
     }
-
-    var latestResultDetail: String {
-        if let latestConnectedDevice {
-            return latestConnectedDevice.detailSummary
-        }
-
-        return "Plug in a device and usb-boop will surface the negotiated link speed here."
-    }
-
-    func start() {
-        guard !hasStarted else { return }
-        hasStarted = true
-        USBBoopLog.appModel.notice(
-            "App model starting; notificationsEnabled=\(self.notificationsEnabled) keepLatestResultPinned=\(self.keepLatestResultPinned)"
-        )
-        notifier = makeNotifier()
-        monitor.start()
-        refreshNotificationAuthorization()
-        requestNotificationsIfNeeded()
-    }
-
-    func refreshDevices() {
-        monitor.refresh()
-    }
-
-    func stop() {
-        monitor.stop()
-        hasStarted = false
-    }
-
-    func reconcileAfterWake() {
-        monitor.reconcileAfterWake()
-    }
-
-    var monitoringMessage: String? {
-        monitoringStatus == .monitoring ? nil : monitoringStatus.message
-    }
-
     var latestConnectionStatus: String? {
         guard let device = latestConnectedDevice else { return nil }
         guard monitoringStatus.isSnapshotReliable else { return "Connection unconfirmed" }
         return currentDevices.contains { $0.id == device.id } ? "Connected" : "Disconnected"
     }
+    var canRequestNotifications: Bool {
+        switch notificationAuthorization {
+        case .notDetermined, .failed: true
+        case .authorized, .denied: false
+        }
+    }
+    var notificationAuthorizationSummary: String {
+        switch notificationAuthorization {
+        case .authorized:
+            return notificationsEnabled ? "Connection notifications are enabled." : "Connection notifications are off."
+        case .denied: return "Notifications are disabled for usb-boop in System Settings → Notifications."
+        case .notDetermined: return "Enable notifications to allow quiet connection banners."
+        case .failed: return "Could not check or request notification permission. Try enabling notifications again."
+        }
+    }
+
+    func start() {
+        guard !hasStarted else { return }
+        hasStarted = true
+        notifier = makeNotifier()
+        monitor.start()
+        Task { [weak self] in await self?.refreshAuthorization() }
+    }
+
+    func stop() {
+        hasStarted = false
+        notifier = nil
+        notificationAuthorization = .notDetermined
+        alertBatcher.cancel()
+        monitor.stop()
+        alertedConnections.removeAll()
+    }
+
+    func refreshDevices() { monitor.refresh() }
+    func reconcileAfterWake() { monitor.reconcileAfterWake() }
+    func clearHistory() { history.removeAll() }
+
+    func becameActive() {
+        loginItem.refresh()
+        Task { [weak self] in await self?.refreshAuthorization() }
+    }
+
+    func refreshAuthorization() async {
+        guard let notifier else { return }
+        _ = await notifier.refreshAuthorizationState()
+        guard hasStarted, self.notifier === notifier else { return }
+        notificationAuthorization = notifier.authorizationState
+        if notificationAuthorization != .authorized { alertBatcher.cancel() }
+    }
+
+    /// Only UI actions call this method; restoring a saved preference never prompts.
+    func setNotificationsEnabled(_ enabled: Bool) async {
+        notificationsEnabled = enabled
+        guard enabled, let notifier else { return }
+        _ = await notifier.requestAuthorizationIfNeeded()
+        guard hasStarted, self.notifier === notifier else { return }
+        notificationAuthorization = notifier.authorizationState
+        if notificationAuthorization != .authorized { alertBatcher.cancel() }
+    }
 
     private func bindMonitor() {
-        monitor.onStatusChanged = { [weak self] status in self?.monitoringStatus = status }
-
+        monitor.onStatusChanged = { [weak self] status in
+            guard let self else { return }
+            self.monitoringStatus = status
+            if !status.isSnapshotReliable { self.alertBatcher.cancel() }
+        }
         monitor.onDevicesChanged = { [weak self] devices in
             guard let self else { return }
-            USBBoopLog.appModel.notice("Received device snapshot with \(devices.count) devices")
             self.currentDevices = devices
-        }
-
-        monitor.onDeviceAttached = { [weak self] device in
-            guard let self else { return }
-
-            self.latestConnectedDevice = device
-            USBBoopLog.appModel.notice(
-                "Device attached in app model: \(device.name, privacy: .public) at \(device.speed.displayLabel, privacy: .public)"
-            )
-
-            if self.notificationsEnabled, let notifier = self.notifier {
-                USBBoopLog.appModel.notice("Sending user notification for \(device.name, privacy: .public)")
-                notifier.sendConnectionNotification(for: device)
-            } else {
-                USBBoopLog.appModel.notice("Notifications disabled; not sending alert for \(device.name, privacy: .public)")
+            let identifiers = Set(devices.map(\.id))
+            for identifier in self.alertedConnections.subtracting(identifiers) { self.alertBatcher.remove(identifier) }
+            self.alertedConnections.formIntersection(identifiers)
+            if let latest = self.latestConnectedDevice, let current = devices.first(where: { $0.id == latest.id }) {
+                self.latestConnectedDevice = current
             }
         }
-    }
-
-    private func requestNotificationsIfNeeded() {
-        guard let notifier else {
-            return
+        monitor.onDeviceAttached = { [weak self] device in self?.receiveAttachment(device) }
+        monitor.onDeviceDetached = { [weak self] device in
+            self?.alertedConnections.remove(device.id)
+            self?.alertBatcher.remove(device.id)
         }
-
-        Task {
-            let state = await notifier.requestAuthorizationIfNeeded()
-            self.notificationAuthorizationSummary = Self.description(for: state)
-            USBBoopLog.appModel.notice("Notification authorization state after request: \(Self.description(for: state), privacy: .public)")
+        monitor.onObservation = { [weak self] observation in
+            guard let self else { return }
+            self.history.insert(observation, at: 0)
+            if self.history.count > 50 { self.history.removeLast(self.history.count - 50) }
         }
     }
 
-    private func refreshNotificationAuthorization() {
-        guard let notifier else {
-            return
-        }
-
-        Task {
-            let state = await notifier.refreshAuthorizationState()
-            self.notificationAuthorizationSummary = Self.description(for: state)
-            USBBoopLog.appModel.debug("Refreshed notification authorization: \(Self.description(for: state), privacy: .public)")
-        }
-    }
-
-    private static func description(for state: UserNotificationCoordinator.AuthorizationState) -> String {
-        switch state {
-        case .authorized:
-            return "Notifications are enabled."
-        case .denied:
-            return "Notifications are disabled for usb-boop in macOS Notification Center."
-        case .notDetermined:
-            return "usb-boop will ask for notification permission the first time it launches."
-        }
+    private func receiveAttachment(_ device: USBDevice) {
+        latestConnectedDevice = device
+        guard alertedConnections.insert(device.id).inserted else { return }
+        guard hasStarted, notificationsEnabled, !device.isHub,
+              notifier?.authorizationState == .authorized else { return }
+        alertBatcher.enqueue(device)
     }
 }
