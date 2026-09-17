@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/icon.png" width="128" height="128" alt="usb-boop icon">
+  <img src="docs/icon.png" width="128" height="128" alt="Nose Boop: a ginger cat touching a teal USB-C plug with its nose">
 </p>
 
 <h1 align="center">usb-boop</h1>
@@ -23,6 +23,12 @@
 Plugging in a USB device and wondering *"did it actually connect at full speed?"* shouldn't require digging through System Information. usb-boop lives in your menu bar, watches IOKit for attach events, and shows the device name and negotiated link speed. Optional quiet banners group connections arriving within a one-second window.
 
 Perfect for testing cables, hubs, and ports.
+
+Meet **Nose Boop**, our ginger cat mascot: the cat boops the connection, and
+usb-boop reports its link speed. Inspired by cats getting a little too involved
+with cables, Nose Boop is the app's chosen identity across the app icon,
+notifications, menu bar, and website. See the [branding guide](docs/branding.md)
+for the canonical artwork and future design references.
 
 ## Install
 

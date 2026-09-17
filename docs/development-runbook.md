@@ -268,7 +268,46 @@ native appearance; the test suite verifies its payload, not on-screen delivery.
 Logs: `/tmp/usb-boop-notification-copy-lint.log` and
 `/tmp/usb-boop-notification-copy-tests.log`.
 
-Two app-icon concepts were pitched, without replacing app assets: a teal USB-C
-plug touching a coral dot (Boop), and a coral cable forming a b-shaped loop on
-cobalt (Fast Loop). Select and refine a direction before generating production
-icon sizes. The existing menu-bar symbol is separate from the app icon.
+The initial Boop and Fast Loop icon proposals were superseded by the selected
+cat-themed Nose Boop identity below.
+
+
+## Nose Boop identity (2026-09-17)
+
+Alex selected Nose Boop as the lasting identity: a ginger cat boops a teal USB-C
+plug, and the app reports the connection's link speed. The canonical references
+are [the branding guide](branding.md), `Design/nose-boop-source.png`, and
+`Design/nose-boop-menu-source.png`. The earlier SVG icon was removed so future
+exports cannot accidentally restore the retired design.
+
+Regenerate every packaged image from the approved masters:
+
+```sh
+./scripts/generate_icon_assets.sh
+shellcheck scripts/generate_icon_assets.sh
+```
+
+The script uses macOS `sips` to resize the approved artwork, without changing the
+design. It updates all ten AppIcon sizes, the 1x/2x monochrome MenuBarIcon assets,
+README/site `docs/icon.png`, and `docs/favicon.png`. The menu-bar catalog marks
+its image as a template; `USBBoopApp` loads it instead of the generic cable symbol.
+Notifications inherit the app's compiled icon rather than attaching extra artwork.
+Keep the existing accessible menu-bar name, `usb-boop`.
+
+Validation: all asset dimensions checked; repeat generation produced identical
+hashes; full tests (126), strict SwiftLint, and ShellCheck passed. Browser previews
+verified the full-color artwork at 256/64/32/16 pixels, the 22-point menu mark on
+light/dark backgrounds, and the local website hero. The rebuilt sandboxed Debug
+bundle was installed in `~/Applications/usb-boop-dev.app`, registered with
+LaunchServices, and relaunched. Its installed AppIcon.icns hash matches the
+built bundle. No permission/cache database was reset. A subsequent native banner
+with the new icon remains a manual acceptance check.
+
+Logs: `/tmp/usb-boop-nose-boop-lint.log` and
+`/tmp/usb-boop-nose-boop-tests.log`. Public release/Homebrew/hosted site remain
+unchanged until the next version is deliberately published; keep the PR in draft.
+
+Alex found the first detailed menu-bar mark hard to recognize. It was simplified
+to a solid cat-head silhouette, previewed in both light and dark appearances.
+The full-color Nose Boop artwork is unchanged. Menu dismissal behavior is being
+clarified separately; no speculative menu lifecycle change was made.
