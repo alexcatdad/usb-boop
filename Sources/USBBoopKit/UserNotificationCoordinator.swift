@@ -39,12 +39,11 @@ public final class UserNotificationCoordinator {
 
         let content = UNMutableNotificationContent()
         if eligibleDevices.count == 1, let device = eligibleDevices.first {
-            content.title = "USB Connected"
+            content.title = device.name
             content.body = device.notificationBody
-            content.subtitle = device.speed.technicalLabel ?? ""
         } else {
-            content.title = "USB Devices Connected"
-            content.body = "\(eligibleDevices.count) devices connected. Open usb-boop from the menu bar for link speeds."
+            content.title = "\(eligibleDevices.count) USB devices connected"
+            content.body = "Open usb-boop for link speeds."
         }
         content.sound = soundEnabled ? .default : nil
         content.threadIdentifier = "usb-boop.connections"

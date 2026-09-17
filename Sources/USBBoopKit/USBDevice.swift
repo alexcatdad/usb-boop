@@ -56,7 +56,7 @@ public struct USBDevice: Identifiable, Equatable, Hashable, Sendable {
         speed == .unknown || speed == .other ? speed.displayLabel : "Link speed: \(speed.displayLabel)"
     }
 
-    public var notificationBody: String { "\(name) — \(linkSpeedSummary)" }
+    public var notificationBody: String { "Connected · \(linkSpeedSummary)" }
 
     public var detailSummary: String {
         var details: [String] = [speed.displayLabel]

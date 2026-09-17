@@ -2,7 +2,7 @@
 import XCTest
 
 final class USBDeviceTests: XCTestCase {
-    func testNotificationBodyIncludesFriendlyDeviceNameAndSpeed() {
+    func testNotificationBodyIncludesConnectionAndLinkSpeed() {
         let device = USBDevice(
             id: 42,
             name: "Samsung T7",
@@ -13,7 +13,7 @@ final class USBDeviceTests: XCTestCase {
             speed: .usb3Gen2
         )
 
-        XCTAssertEqual(device.notificationBody, "Samsung T7 — Link speed: 10 Gbps")
+        XCTAssertEqual(device.notificationBody, "Connected · Link speed: 10 Gbps")
         XCTAssertTrue(device.detailSummary.contains("10 Gbps"))
         XCTAssertTrue(device.detailSummary.contains("Samsung"))
     }

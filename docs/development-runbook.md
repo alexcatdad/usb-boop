@@ -30,8 +30,8 @@ version. Inspect only this app's diagnostic logs when troubleshooting:
 ```
 
 Do not clear system notification preferences, reset permission databases, or
-add push-notification entitlements to debug local banners. Native authorization
-is verified; an actual connection banner after authorization remains unverified.
+add push-notification entitlements to debug local banners. Native authorization is verified. Alex subsequently observed a connection banner
+and reported that its title/subtitle/body hierarchy was too verbose.
 The inspector times out while the app has only its menu-bar item and no open window.
 
 Local strict SwiftLint and all 126 tests pass, covering error detail, passive
@@ -251,3 +251,24 @@ Open the menu manually before attaching a native UI inspector: this accessory
 app may be unselectable by inspection tools when it has no visible windows.
 The temporary build directory is suitable for compilation, but notification
 acceptance on this host requires launching the copy in `~/Applications`.
+
+
+## Concise connection banners (2026-09-17)
+
+Single-device banners put the device name in the title and
+`Connected · Link speed: 10 Gbps` in the body. Leave the subtitle empty; technical
+USB generation labels remain available in the menu. Unknown speeds retain the
+explicit unavailable label. Grouped banners put the count in the title and use
+`Open usb-boop for link speeds.` as the body. Sound remains off by default.
+
+Updated existing content assertions, strict SwiftLint, and all 126 tests pass.
+The rebuilt, sandboxed Debug app was copied to `~/Applications/usb-boop-dev.app`
+and relaunched. The next real connection should verify the revised banner's
+native appearance; the test suite verifies its payload, not on-screen delivery.
+Logs: `/tmp/usb-boop-notification-copy-lint.log` and
+`/tmp/usb-boop-notification-copy-tests.log`.
+
+Two app-icon concepts were pitched, without replacing app assets: a teal USB-C
+plug touching a coral dot (Boop), and a coral cable forming a b-shaped loop on
+cobalt (Fast Loop). Select and refine a direction before generating production
+icon sizes. The existing menu-bar symbol is separate from the app icon.
