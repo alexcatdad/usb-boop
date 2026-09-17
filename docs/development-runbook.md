@@ -166,3 +166,42 @@ reported; no serials were exported and no volume contents were accessed. On olde
 check `system_profiler -listDataTypes` for the supported USB report name.
 This proves sandboxed metadata enumeration, not physical reconnect, restricted
 media, sleep/wake, notification visibility, or login-session acceptance.
+
+## Menu window and Settings regression (2026-09-17)
+
+Native screenshots exposed a MenuBarExtra sizing failure: the outer ScrollView
+used only a maximum height, allowing the live menu to collapse to roughly 149
+points overall. Give that viewport an explicit 520-point height; the device list
+retains its 320-point cap and controls remain outside the scrolling region.
+The layout test must reject menus that are too short as well as too tall. It
+checks `NSHostingController.sizeThatFits` with a zero-height proposal, since
+the ideal fitting size alone failed to reproduce the native window's collapse.
+Restoring the old maximum-only frame makes that assertion fail at 121 points
+against the 600-point minimum; the fixed frame passes.
+
+Settings now explicitly activates the application and invokes SwiftUI's public
+`openSettings` action. Menu-bar interaction alone does not guarantee activation.
+Keep the native Settings scene; do not search private SwiftUI window identifiers
+or introduce delayed activation guesses.
+
+Local verification: strict SwiftLint and all 122 tests pass. Native before/after
+screenshots in the development conversation show the full corrected menu and
+successful scrolling to the final device while controls remain visible. The
+Settings button opened the window, and Alex confirmed it appeared in front.
+This does not establish notification permission or login-item acceptance.
+
+To build a sandboxed local Debug app independently of the installed release:
+
+```sh
+xcodebuild -project usb-boop.xcodeproj -scheme usb-boop -configuration Debug \
+  -destination 'platform=macOS,arch=arm64' \
+  -derivedDataPath /tmp/usb-boop-menu-fix-derived CODE_SIGNING_ALLOWED=NO build
+debug_app=/tmp/usb-boop-menu-fix-derived/Build/Products/Debug/usb-boop-dev.app
+codesign --force --sign - "$debug_app/Contents/Frameworks/USBBoopKit.framework/Versions/A"
+codesign --force --sign - --entitlements Sources/App/usb-boop.entitlements "$debug_app"
+codesign --verify --deep --strict "$debug_app"
+open "$debug_app"
+```
+
+Open the menu manually before attaching a native UI inspector: this accessory
+app may be unselectable by inspection tools when it has no visible windows.

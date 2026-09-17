@@ -2,6 +2,7 @@ import SwiftUI
 import USBBoopKit
 
 struct MenuBarContentView: View {
+    @Environment(\.openSettings) private var openSettings
     @Bindable var model: AppModel
     @State private var historyExpanded = false
 
@@ -15,7 +16,9 @@ struct MenuBarContentView: View {
                     historySection
                 }
             }
-            .frame(maxHeight: 520)
+            // MenuBarExtra can propose a minimal window size. A maximum
+            // alone lets ScrollView collapse to almost zero height in that window.
+            .frame(height: 520)
             controlsSection
         }
         .padding(16)
@@ -126,7 +129,12 @@ struct MenuBarContentView: View {
                 }
             }
             HStack {
-                SettingsLink { Text("Settings…") }.buttonStyle(.borderless)
+                Button("Settings…") {
+                    NSApplication.shared.activate()
+                    openSettings()
+                }
+                .buttonStyle(.borderless)
+                .keyboardShortcut(",", modifiers: .command)
                 Spacer()
                 Button("Quit") { NSApplication.shared.terminate(nil) }
                     .buttonStyle(.borderless).keyboardShortcut("q", modifiers: .command)

@@ -15,11 +15,15 @@ final class MenuLayoutTests: XCTestCase {
         let model = AppModel(monitor: monitor)
         monitor.start()
         NSApplication.shared.appearance = NSAppearance(named: .aqua)
-        let view = NSHostingView(rootView: MenuBarContentView(model: model)
+        let controller = NSHostingController(rootView: MenuBarContentView(model: model)
             .environment(\.colorScheme, .light)
             .background(Color(nsColor: .windowBackgroundColor)))
+        let view = controller.view
         view.appearance = NSAppearance(named: .aqua)
         let size = view.fittingSize
+        // MenuBarExtra can propose a minimal size instead of the ideal fitting size.
+        let minimumSize = controller.sizeThatFits(in: CGSize(width: 390, height: 0))
+        XCTAssertGreaterThanOrEqual(minimumSize.height, 600)
         XCTAssertLessThanOrEqual(size.height, 740)
         XCTAssertEqual(size.width, 390, accuracy: 1)
         view.frame = NSRect(origin: .zero, size: size)
