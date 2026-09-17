@@ -20,7 +20,7 @@
 
 ## Why
 
-Plugging in a USB device and wondering *"did it actually connect at full speed?"* shouldn't require digging through System Information. usb-boop lives in your menu bar, watches IOKit for attach events, and fires a notification with the device name and negotiated speed in under a second.
+Plugging in a USB device and wondering *"did it actually connect at full speed?"* shouldn't require digging through System Information. usb-boop lives in your menu bar, watches IOKit for attach events, and shows the device name and negotiated link speed. Optional quiet banners group connections arriving within a one-second window.
 
 Perfect for testing cables, hubs, and ports.
 

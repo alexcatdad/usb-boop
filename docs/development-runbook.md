@@ -154,3 +154,15 @@ sleep/wake, interactive notification delivery/denial, VoiceOver and keyboard
 navigation, and actual logout/login with the installed release. Native UI
 selection timed out through the available computer-use tool; static rendered
 layout was inspected instead. Do not log out the user's session to test startup.
+
+### Sandboxed metadata probe result
+
+A temporary helper app linked against the exact Release USBBoopKit framework,
+ad-hoc signed with the app's existing sandbox and USB entitlements, enumerated
+14 real devices and stopped cleanly. No initial device had a connectedAt time.
+Its speed counts matched `system_profiler SPUSBHostDataType -json` on macOS 27:
+5 at 12 Mbps, 5 at 480 Mbps, 1 at 5 Gbps, and 3 at 10 Gbps. Only counts were
+reported; no serials were exported and no volume contents were accessed. On older macOS,
+check `system_profiler -listDataTypes` for the supported USB report name.
+This proves sandboxed metadata enumeration, not physical reconnect, restricted
+media, sleep/wake, notification visibility, or login-session acceptance.
