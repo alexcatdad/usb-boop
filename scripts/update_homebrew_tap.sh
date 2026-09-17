@@ -37,14 +37,6 @@ cask "usb-boop" do
 
   app "usb-boop.app"
 
-  # The app is ad-hoc signed rather than notarized, so Gatekeeper would
-  # otherwise refuse to launch it. Remove this once Developer ID signing
-  # and notarization are in place.
-  postflight_steps do
-    run "/usr/bin/xattr",
-        args: ["-rd", "com.apple.quarantine", "{{appdir}}/usb-boop.app"]
-  end
-
   # Kept alphabetical: brew style enforces Cask/ArrayAlphabetization.
   # The app is sandboxed, so its preferences live inside its container;
   # the loose plist is only left behind by pre-sandbox builds.

@@ -9,6 +9,15 @@ fi
 
 version="$1"
 output_dir="$2"
+if [[ ! "${version}" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+$ ]]; then
+  echo "expected a CalVer version: YYYY.MM.DD.N" >&2
+  exit 1
+fi
+sign_identity="${CODESIGN_IDENTITY:-}"
+if [[ "${sign_identity}" != "Developer ID Application: "* ]]; then
+  echo "set CODESIGN_IDENTITY to your local Developer ID Application identity" >&2
+  exit 1
+fi
 
 derived_data_path="${DERIVED_DATA_PATH:-$(pwd)/.build/DerivedData}"
 artifact_name="usb-boop-macos-arm64.zip"
@@ -40,18 +49,9 @@ fi
 # the bundle gets. The entitlements must be passed explicitly or the App
 # Sandbox is silently dropped from the shipped app.
 #
-# Defaults to ad-hoc so Gatekeeper doesn't flag the app as "damaged". Set
-# CODESIGN_IDENTITY to a Developer ID Application identity to sign for real;
-# that is also the only case where Hardened Runtime can be enabled, because it
-# turns on library validation and an ad-hoc signature has no Team ID for the
-# embedded USBBoopKit.framework to match.
-sign_identity="${CODESIGN_IDENTITY:--}"
-sign_opts=(--force --sign "${sign_identity}")
-if [[ "${sign_identity}" != "-" ]]; then
-  sign_opts+=(--options runtime --timestamp)
-else
-  echo "warning: signing ad-hoc; Hardened Runtime and notarization are skipped" >&2
-fi
+# Release packaging always requires the local Developer ID private key. Debug
+# builds remain independent. The key is never exported to CI.
+sign_opts=(--force --sign "${sign_identity}" --options runtime --timestamp)
 
 # Sign inside-out: nested code first, then the bundle that contains it.
 codesign "${sign_opts[@]}" "${app_path}/Contents/Frameworks/USBBoopKit.framework/Versions/A"
@@ -66,7 +66,7 @@ if ! codesign --display --entitlements - --xml "${app_path}" 2>/dev/null \
   echo "signed bundle is missing the App Sandbox entitlement" >&2
   exit 1
 fi
-codesign --verify --strict --verbose=2 "${app_path}"
+codesign --verify --deep --strict --verbose=2 "${app_path}"
 
 rm -f "${artifact_path}"
 ditto -c -k --sequesterRsrc --keepParent "${app_path}" "${artifact_path}"

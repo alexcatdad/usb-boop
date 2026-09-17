@@ -1,174 +1,155 @@
 # Release Automation
 
-## Overview
+## Release ownership
 
-`usb-boop` now follows the same release shape as `paw-proxy`: release automation runs directly on `push` to `main` and on manual `v*` tag pushes.
+Release packages are built and signed on Alex's Mac. The Developer ID private key
+stays in the macOS Keychain; GitHub Actions receives neither that key nor Apple
+notarization credentials. Notarization still submits the signed package to Apple.
 
-The release flow does five things:
+Merging to `main` runs tests and security checks but does not publish an app.
+After checks pass on the reviewed release commit, the local release process:
 
-1. derives a CalVer version in the form `YYYY.MM.DD.N`
-2. tags the commit as `vYYYY.MM.DD.N`
-3. skips non-release commit types such as `docs:`, `ci:`, `chore:`, `test:`, and `style:`
-4. builds and uploads a zipped Apple Silicon `.app` bundle to GitHub Releases
-5. updates the Homebrew tap cask in `alexcatdad/homebrew-tap`
+1. selects a new CalVer version and builds that exact clean commit;
+2. signs the framework and app with Developer ID and Hardened Runtime;
+3. submits the archive to Apple and waits for an **Accepted** result;
+4. staples Apple's ticket to the app, repackages it, and verifies the final zip;
+5. tags the source commit and publishes the zip and its SHA-256 sidecar;
+6. lets GitHub verify the published package before updating Homebrew.
 
-## CalVer Rules
+See the [development runbook](development-runbook.md) for the local commands and
+acceptance record. Signing and automated verification do not replace manual
+hardware, notification, accessibility, or login testing.
 
-- version format: `YYYY.MM.DD.N`
-- date source: UTC
-- `N` starts at `0` each day
-- additional releases on the same UTC day increment `N`
+## Versions and release assets
 
-Examples:
+Versions use `YYYY.MM.DD.N`, with the date in UTC and `N` starting at `0` each
+day. `scripts/next_calver.sh` proposes the next version using existing tags.
+For example, `2026.09.17.4` is tagged as `v2026.09.17.4`.
 
-- `2026.03.30.0`
-- `2026.03.30.1`
-- `2026.03.31.0`
+Published versions are append-only: do not move a published tag, replace an
+archive, or overwrite its checksum. A changed signature, stapled ticket, binary,
+or packaging requires a new version. This preserves existing downloads and
+Homebrew's checksum expectations. In particular, converting an earlier ad-hoc
+release to Developer ID signing requires a new version.
 
-## Workflows
+Each stable release contains:
 
-- [ci.yml](../.github/workflows/ci.yml)
-  Runs build and tests on pull requests and pushes to `main`.
-- [release.yml](../.github/workflows/release.yml)
-  Runs on direct `main` pushes and `v*` tag pushes, creates the release, and updates the Homebrew tap.
-- [security.yml](../.github/workflows/security.yml)
-  Supply-chain and vulnerability checks. See [Security Checks](#security-checks).
+- `usb-boop-macos-arm64.zip`, containing `usb-boop.app` for Apple Silicon;
+- `usb-boop-macos-arm64.sha256`, containing the final archive's checksum.
 
-All third-party actions are pinned to a full commit SHA with the version in a
-trailing comment. Dependabot raises grouped `ci:` PRs to move those SHAs
-forward; because `ci:` is a non-release commit type, those merges do not cut a
-release on their own.
+The checksum is calculated **after** stapling and repackaging. Publishing is the
+last local step, after validation succeeds. A draft release can hold the assets
+while preparing the release; the Homebrew workflow runs only after publication.
 
-## Required Secrets And Variables
+## Signing and verification
 
-To match `paw-proxy`, the tap update job expects the same GitHub App-based setup:
+`scripts/build_release_zip.sh <version> <output-dir>` performs the Release build
+and signs nested code before the containing app. Set `CODESIGN_IDENTITY` to the
+local Developer ID Application identity. The published app must retain the App
+Sandbox and USB entitlement and use the release bundle identifier
+`com.alexcatdad.usb-boop`.
 
-- repository or environment variable: `APP_ID`
-- repository or environment secret: `APP_SECRET`
-  The private key for the GitHub App that can write to `alexcatdad/homebrew-tap`
-
-`GITHUB_TOKEN` is used for the tag and release in the `usb-boop` repo itself.
-
-## Release Artifact
-
-The published asset is:
-
-- `usb-boop-macos-arm64.zip`
-
-It contains an ad-hoc signed `usb-boop.app` bundle built for Apple Silicon only.
-
-### Signing
-
-`scripts/build_release_zip.sh` builds with `CODE_SIGNING_ALLOWED=NO` and then
-signs the bundle itself, so the signing flags in that script are the only ones
-that reach users.
-
-- The App Sandbox and `com.apple.security.device.usb` entitlements are passed
-  explicitly with `--entitlements`. Without that flag the shipped app has no
-  sandbox at all, regardless of what `project.yml` says. The script fails the
-  build if the sandbox entitlement is missing from the final signature.
-- Nested code is signed inside-out: `USBBoopKit.framework` first, then the app.
-- Hardened Runtime is applied **only** when `CODESIGN_IDENTITY` names a real
-  Developer ID identity. It enables library validation, which requires the app
-  and its embedded framework to share a Team ID — an ad-hoc signature has none,
-  so enabling it for ad-hoc builds makes the app fail to launch with
-  `Library not loaded: @rpath/USBBoopKit.framework`.
-
-To produce a properly signed build once a Developer ID is available:
+The release verifier is shared between local acceptance and GitHub:
 
 ```sh
-CODESIGN_IDENTITY="Developer ID Application: ... (TEAMID)" \
-  ./scripts/build_release_zip.sh 2026.01.01.0 dist
+./scripts/verify_release_artifact.sh dist/usb-boop-macos-arm64.zip 2026.09.17.4
 ```
 
-## Homebrew Delivery
+It verifies the packaged app's version and bundle identity, Developer ID team
+`CX6D6KGCT5`, signatures, Hardened Runtime, sandbox, stapled notarization ticket,
+and Gatekeeper acceptance. It does not inspect USB devices or media contents.
 
-The workflow updates the Homebrew tap as a cask because `usb-boop` is a GUI macOS app.
+An earlier notarization acceptance applies only to the submitted build. Every
+new release archive must complete its own signing, notarization, stapling, and
+verification sequence.
 
-Generated cask path:
+## GitHub workflows
 
-- `Casks/usb-boop.rb`
+- [ci.yml](../.github/workflows/ci.yml) builds, tests, lints, and validates the
+  generated Homebrew cask on pull requests and `main`.
+- [security.yml](../.github/workflows/security.yml) checks workflow supply chain,
+  workflow/shell correctness, and Swift code on pull requests, `main`, and a
+  weekly schedule.
+- [release.yml](../.github/workflows/release.yml) reacts to a published release.
+  It downloads and verifies the existing package on macOS, then updates the
+  Homebrew tap on Ubuntu. It never builds or signs the app.
 
-The cask is generated by `scripts/update_homebrew_tap.sh` and follows current
-Homebrew requirements:
+The Release workflow can also be dispatched manually with an existing published
+release tag to recover a failed Homebrew delivery. It accepts only a non-draft,
+non-prerelease CalVer tag that resolves to a commit in `main` history and is the
+latest stable GitHub release.
 
-- `postflight_steps`, not a legacy `postflight do` Ruby block. Official taps
-  reject flight blocks and third-party support for them is explicitly
-  temporary.
-- `depends_on macos: :sonoma`. The `">= :sonoma"` string comparison form is
-  deprecated and Homebrew warns on every `brew info`.
-- A `livecheck` block so `brew livecheck` can see new releases.
-- `zap` targets `~/Library/Containers/com.alexcatdad.usb-boop`, because the app
-  is sandboxed and its preferences live in its container rather than in
-  `~/Library/Preferences`.
+Release delivery runs are serialized. Before writing the tap, the workflow
+checks the latest release again and refuses a lower version than the current
+cask. The Ubuntu job downloads the archive again and requires the exact checksum
+verified by the macOS job, so a changed asset cannot silently bypass verification.
+A tap push conflict fails rather than overwriting concurrent work; inspect and
+rerun delivery after resolving the conflict.
 
-The quarantine-stripping `postflight_steps` block exists only because the app
-is ad-hoc signed rather than notarized. Remove it once notarization is in place.
+All external actions are pinned to full commit SHAs. Dependabot proposes updates.
+Workflow permissions start empty; release verification only reads repository
+contents. Checkout credentials are disabled except for the deliberate tap push.
+Release tags and other dynamic values are passed through environment variables,
+not interpolated into shell programs.
 
-CI regenerates the cask on every PR, runs `brew style --cask`, trusts only the
-generated cask, and loads it with `HOMEBREW_DEVELOPER=1 brew info --cask`.
-Developer mode makes deprecated DSL options fail validation, even when style
-passes. The URL uses Homebrew's default verification; the former `verified:`
-option was deprecated in Homebrew 7.
+## Required credentials
 
-Install command:
+On the release Mac:
+
+- the Developer ID Application identity and private key in Keychain;
+- a Keychain notarization profile, currently `usb-boop-notary`;
+- GitHub CLI authorization to create tags and publish release assets.
+
+Do not export the Apple private key or store notarization credentials in GitHub.
+
+The Homebrew update job continues using the `action-runners` environment:
+
+- variable `APP_ID`;
+- secret `APP_SECRET`, the GitHub App private key with write access to
+  `alexcatdad/homebrew-tap`.
+
+That GitHub App credential is independent of Apple signing. Its installation
+token is scoped to the tap and contents write permission. `GITHUB_TOKEN` reads
+published release metadata/assets; it does not publish or create tags.
+
+## Homebrew delivery
+
+`scripts/update_homebrew_tap.sh` generates `Casks/usb-boop.rb`. The cask uses
+`depends_on macos: :sonoma`, Apple Silicon architecture, GitHub latest-release
+livecheck, and sandbox-container paths for `zap`. It does not strip quarantine:
+Gatekeeper evaluates the Developer ID signature and notarization ticket.
+
+CI regenerates the cask, runs `brew style --cask`, and loads it with
+`HOMEBREW_DEVELOPER=1 brew info --cask` to catch deprecated DSL behavior.
 
 ```sh
 brew tap alexcatdad/tap
 brew install --cask alexcatdad/tap/usb-boop
 ```
 
-## Security Checks
+## Security checks and provenance
 
-`usb-boop` has no third-party Swift dependencies, so there is no package
-manifest to scan. The realistic supply-chain surface is the CI configuration
-itself and the code in this repository. [security.yml](../.github/workflows/security.yml)
-covers both, on every PR, on `main`, and weekly so newly-published advisories
-surface without a code change.
+The project has no third-party Swift runtime dependencies. Its automated checks
+cover application code and the CI configuration:
 
-| Check | Tool | What it catches |
-|-------|------|-----------------|
-| Workflow supply chain | [zizmor](https://docs.zizmor.sh/) | Unpinned actions, credential persistence, template injection, over-broad permissions |
-| Workflow correctness | actionlint | Invalid syntax, bad expressions, unknown contexts |
-| Shell scripts | shellcheck | Quoting and word-splitting bugs in `scripts/*.sh` |
-| Application code | CodeQL (`swift`, `security-and-quality`) | Vulnerabilities and quality issues in Swift sources |
-| Action versions | Dependabot | Outdated or vulnerable pinned action SHAs |
-| Release integrity | actions/attest (SLSA provenance) | Substituted or tampered release archives |
+| Check | Tool | Purpose |
+|-------|------|---------|
+| Workflow supply chain | zizmor | Credential persistence, unsafe interpolation, excessive permissions, unpinned actions |
+| Workflow correctness | actionlint | Workflow syntax, expressions, and contexts |
+| Shell scripts | shellcheck | Shell quoting and correctness |
+| Application code | CodeQL Swift | Security and quality queries |
+| Action versions | Dependabot | Pinned action updates |
+| Published app | macOS signature, notarization, and Gatekeeper tools | Expected developer identity and accepted distributable package |
+| Download integrity | SHA-256 | Match published bytes to the package verified on macOS |
 
-Findings are uploaded as SARIF and appear under the repository's Security tab.
+Locally built packages do **not** carry a GitHub Actions build-provenance
+attestation. A workflow that merely downloads an app must not claim it built
+that app. Developer ID identifies the signing developer, and Apple's
+notarization records its assessment; neither proves that the binary was built
+from a particular Git commit. Building from the clean reviewed commit and
+recording the source, toolchain, notarization submission, and final checksum in
+the release evidence remain the maintainer's responsibility.
 
-Hardening already applied to the workflows:
-
-- Every third-party action is pinned to a full commit SHA. A mutable tag such as
-  `@v4` is repointable by whoever controls the action repository; the March 2026
-  `trivy-action` compromise is the reference case.
-- `permissions: {}` at workflow level, with each job requesting only the scopes
-  it needs.
-- `persist-credentials: false` on every checkout that does not push. The two
-  that do push — the tag-creating checkout in `release.yml` and the
-  `homebrew-tap` checkout — keep credentials deliberately.
-- Untrusted input (the head commit message) is passed through `env:` rather than
-  interpolated into a `run:` block.
-
-### Build Provenance
-
-The release workflow attests every published archive with `actions/attest`,
-producing a SLSA provenance statement signed through Sigstore's public-good
-instance. This is free for public repositories and needs no Apple account.
-
-```bash
-gh attestation verify usb-boop-macos-arm64.zip --repo alexcatdad/usb-boop
-```
-
-The job requests `id-token: write` (to mint the OIDC token Sigstore signs
-against) and `attestations: write`. `create-storage-record` is disabled because
-the storage record requires a further permission the job does not need.
-
-### Not covered
-
-- The release build is ad-hoc signed and not notarized, so **macOS** cannot
-  verify its origin — the provenance attestation above is checked by `gh`, not
-  by Gatekeeper. The cask strips the quarantine flag to compensate, which means
-  users get no Gatekeeper check on this app. Developer ID signing plus
-  notarization is the fix, and it requires a paid Apple Developer Program
-  membership; see [Signing](#signing).
+Earlier ad-hoc releases may retain their historical CI attestations. Those
+attestations describe those earlier archives only and are not evidence for a
+new locally signed release.
