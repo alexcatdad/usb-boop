@@ -512,3 +512,35 @@ gh workflow run release.yml -f tag="v${release_version}"
 Adding an asset does not emit a new `release.published` event. The manual dispatch
 checks both formats and confirms Homebrew still receives the same verified ZIP.
 Record app source separately from packaging source in the release evidence.
+
+## Static connection timestamps
+
+Device rows show a localized, fixed date and time: **Connected at** for a live
+attach, or **Seen since** for startup/refresh discovery. Both the pinned result
+and device list use the same row. Format the date to an ordinary string rather
+than using a live relative-date Text view; there is no reason to update elapsed
+seconds while the menu is hidden. Include the date so overnight sessions remain
+unambiguous. Preserve firstSeenAt/connectedAt semantics in the monitor.
+
+Validation:
+
+```sh
+xcodegen generate
+swiftlint lint --strict
+xcodebuild -project usb-boop.xcodeproj -scheme usb-boop \
+  -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO test
+```
+
+For native acceptance, check a startup device says Seen since and a live attach
+says Connected at, with the user's localized date/time format. Leave the menu
+open across a minute boundary and confirm the displayed timestamp stays fixed.
+Check the pinned row too. Do not disconnect storage devices merely to test this.
+
+For performance comparison, measure the same installed release/configuration
+and devices before and after the change. Record physical footprint with
+`vmmap -summary PID` and idle CPU with
+`top -l 21 -s 1 -pid PID -stats pid,command,cpu,mem,threads,time`; discard initial
+samples and avoid UI interactions or other profiling tools during measurement.
+Keep memory and CPU claims separate: removing live dates targets repeated UI
+work, and does not establish a particular memory saving. Merging this change
+does not publish or replace the locally signed release.

@@ -164,8 +164,8 @@ private struct DeviceRow: View {
                 .foregroundStyle(speedColor)
             HStack(spacing: 4) {
                 if device.isHub { Text("Hub ·") }
-                Text(device.connectedAt == nil ? "Seen since" : "Connected")
-                Text(device.connectedAt ?? device.firstSeenAt, style: .relative)
+                Text(device.connectedAt == nil ? "Seen since" : "Connected at")
+                Text((device.connectedAt ?? device.firstSeenAt).formatted(date: .abbreviated, time: .shortened))
             }.font(.caption).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
