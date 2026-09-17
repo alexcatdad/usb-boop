@@ -308,6 +308,7 @@ Logs: `/tmp/usb-boop-nose-boop-lint.log` and
 unchanged until the next version is deliberately published; keep the PR in draft.
 
 Alex found the first detailed menu-bar mark hard to recognize. It was simplified
-to a solid cat-head silhouette, previewed in both light and dark appearances.
+to a cat-head silhouette, then given a bold transparent USB-trident cutout at
+Alex's request. The final mark was previewed at 22 points in light/dark appearances.
 The full-color Nose Boop artwork is unchanged. Menu dismissal behavior is being
 clarified separately; no speculative menu lifecycle change was made.

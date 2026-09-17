@@ -25,11 +25,12 @@ from the app's bundled icon; it is not a separate illustration.
 
 ## Menu bar mark
 
-The menu bar uses a solid, front-facing cat-head silhouette with two ears and
-rounded cheeks. Alex found the initial nose-and-plug miniature too hard to read;
-at 22 points, omit the plug, face details, and motion marks. The transparent
-template image lets macOS tint it for light and dark appearances. Keep the full
-Nose Boop illustration for app icons and larger surfaces.
+The menu bar uses a front-facing cat-head silhouette with a bold USB trident
+cut out of its center. Alex requested the USB symbol to make the purpose clear
+at a glance after the original nose-and-plug miniature proved hard to read.
+At 22 points, omit face details and motion marks. Both the outside and the
+trident are transparent, so macOS can tint the template for light and dark
+appearances. Keep the full Nose Boop illustration for app icons and larger surfaces.
 
 - Canonical artwork: [nose-boop-menu-source.png](../Design/nose-boop-menu-source.png)
 - Bundled template sizes: [MenuBarIcon.imageset](../Sources/App/Assets.xcassets/MenuBarIcon.imageset)
