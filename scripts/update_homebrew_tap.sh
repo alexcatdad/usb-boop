@@ -22,8 +22,7 @@ cask "usb-boop" do
   version "${version}"
   sha256 "${sha256}"
 
-  url "${release_url}",
-      verified: "github.com/alexcatdad/usb-boop/"
+  url "${release_url}"
   name "usb-boop"
   desc "Menu bar app that reports negotiated USB link speed"
   homepage "https://github.com/alexcatdad/usb-boop"
