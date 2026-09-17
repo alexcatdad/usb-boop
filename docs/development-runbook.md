@@ -304,11 +304,23 @@ built bundle. No permission/cache database was reset. A subsequent native banner
 with the new icon remains a manual acceptance check.
 
 Logs: `/tmp/usb-boop-nose-boop-lint.log` and
-`/tmp/usb-boop-nose-boop-tests.log`. Public release/Homebrew/hosted site remain
-unchanged until the next version is deliberately published; keep the PR in draft.
+`/tmp/usb-boop-nose-boop-tests.log`. Publication follows the repository's main-branch workflows. Alex subsequently
+authorized merging PR #12; verify every check on its current head before the
+squash merge. This approval supersedes the earlier instruction to keep it in draft.
 
 Alex found the first detailed menu-bar mark hard to recognize. It was simplified
 to a cat-head silhouette, then given a bold transparent USB-trident cutout at
 Alex's request. The final mark was previewed at 22 points in light/dark appearances.
 The full-color Nose Boop artwork is unchanged. Menu dismissal behavior is being
 clarified separately; no speculative menu lifecycle change was made.
+
+
+## PR #12 delivery authorization (2026-09-17)
+
+Alex explicitly requested merging to main after the local notification and
+Nose Boop work. Mark the PR ready, review current-head checks and findings, and
+squash-merge only when all checks pass. Main pushes trigger the existing release
+workflow. The earlier accepted notarization applies only to its submitted build;
+it does not notarize subsequent CI artifacts. Report merge, publication, and
+notarization as separate outcomes. Menu-dismissal clarification and a native
+banner with the final icon remain manual acceptance follow-ups.
