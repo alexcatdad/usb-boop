@@ -443,3 +443,72 @@ Homebrew auto-update and install cleanup disabled. Homebrew now reports the
 original version, `/Applications/usb-boop.app` is present, and deep/strict
 signature verification passes. No `zap` ran; preferences were retained. The
 running `~/Applications/usb-boop-dev.app` was unaffected. Alex was informed.
+
+## DMG installer
+
+Offer a drag-to-Applications DMG using the unchanged, already approved app from
+the release ZIP. A new outer container needs its own notarization ticket; the
+app inside does not need rebuilding or re-signing. Existing published ZIPs,
+checksums, tags, and installed apps remain untouched. A new format may be added
+under the existing app version only after verifying exact app equality.
+
+The background is rendered at Retina resolution by
+`scripts/render_dmg_background.swift`. Two hash-pinned, pure-Python packaging
+libraries write `.DS_Store` metadata without Finder automation. Neither library
+is bundled into the app or image. Install them in an isolated environment:
+
+```sh
+python3 -m venv .build/dmg-tools
+.build/dmg-tools/bin/pip install --require-hashes --only-binary=:all: \
+  -r scripts/dmg-requirements.txt
+```
+
+Use the downloaded and verified published ZIP. Build into a fresh output folder;
+the builder refuses to overwrite an existing DMG. It mounts only its own
+temporary image and detaches that specific mount point, never USB/media devices.
+
+```sh
+release_version=2026.09.17.4
+dmg_root="/tmp/usb-boop-dmg-${release_version}"
+mkdir -p "$dmg_root/reference"
+gh release download "v${release_version}" --dir "$dmg_root/reference" \
+  --pattern usb-boop-macos-arm64.zip --pattern usb-boop-macos-arm64.sha256
+(cd "$dmg_root/reference" && shasum -a 256 -c usb-boop-macos-arm64.sha256)
+CODESIGN_IDENTITY='Developer ID Application: Alexandru Alexandrescu (CX6D6KGCT5)' \
+  ./scripts/build_release_dmg.sh "$dmg_root/reference/usb-boop-macos-arm64.zip" \
+  "$release_version" "$dmg_root/final"
+xcrun notarytool submit "$dmg_root/final/usb-boop-macos-arm64.dmg" \
+  --keychain-profile usb-boop-notary --output-format json > "$dmg_root/submission.json"
+```
+
+Save the submission ID and query it until Apple reports `Accepted`; do not
+resubmit a pending image. Inspect Apple's log. Then staple the **DMG** and
+calculate its new checksum (the ZIP checksum stays unchanged):
+
+```sh
+xcrun stapler staple "$dmg_root/final/usb-boop-macos-arm64.dmg"
+(cd "$dmg_root/final" && shasum -a 256 usb-boop-macos-arm64.dmg \
+  > usb-boop-macos-arm64.dmg.sha256)
+./scripts/verify_dmg_artifact.sh "$dmg_root/final/usb-boop-macos-arm64.dmg" \
+  "$release_version" "$dmg_root/reference/usb-boop-macos-arm64.zip"
+```
+
+The verifier assesses the DMG and app, validates both tickets, compares every
+app file and symlink against the reference, and detaches its read-only mount.
+Preview the actual Finder window through native inspection and check layout
+and the Applications link; do not drag over an installed app just to test it.
+
+For a new release, include the two DMG files in the draft before publishing. For
+an added format on an existing release, upload only the new filenames without
+`--clobber`, append packaging/notary/checksum evidence to release notes, download
+and verify the published files, then dispatch verification explicitly:
+
+```sh
+gh release upload "v${release_version}" "$dmg_root/final/usb-boop-macos-arm64.dmg" \
+  "$dmg_root/final/usb-boop-macos-arm64.dmg.sha256"
+gh workflow run release.yml -f tag="v${release_version}"
+```
+
+Adding an asset does not emit a new `release.published` event. The manual dispatch
+checks both formats and confirms Homebrew still receives the same verified ZIP.
+Record app source separately from packaging source in the release evidence.

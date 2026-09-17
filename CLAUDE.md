@@ -70,7 +70,9 @@ xcodebuild -project usb-boop.xcodeproj -scheme usb-boop \
 
 - Zero third-party Swift dependencies. Keep it that way.
 - SwiftLint and XcodeGen are build-time only tools, not linked into the app.
-- GitHub Actions are the only third-party dependency. Pin every action to a full
+- DMG layout uses hash-pinned `ds-store` and `mac-alias` in an isolated Python
+  environment. These packaging tools never ship inside the app or installer.
+- Pin every GitHub Action to a full
   commit SHA with a trailing `# vX.Y.Z` comment — never a mutable tag.
   Dependabot moves those SHAs forward.
 

@@ -36,7 +36,10 @@ for the canonical artwork and future design references.
 brew install --cask alexcatdad/tap/usb-boop
 ```
 
-Or download the latest `usb-boop-macos-arm64.zip` from [Releases](https://github.com/alexcatdad/usb-boop/releases/latest), unzip, and drag to Applications.
+Or download the [DMG installer](https://github.com/alexcatdad/usb-boop/releases/latest/download/usb-boop-macos-arm64.dmg),
+open it, and drag **usb-boop** into **Applications**. Then open the app from
+Applications and eject the installer. A ZIP download remains available in
+[Releases](https://github.com/alexcatdad/usb-boop/releases/latest).
 
 Starting with `2026.09.17.4`, releases are signed with Developer ID and notarized
 by Apple. Open the app normally; no quarantine removal is needed.
@@ -44,11 +47,11 @@ by Apple. Open the app normally; no quarantine removal is needed.
 ### Verifying a download
 
 macOS verifies the Developer ID signature and notarization when opening the app.
-Each release also publishes a checksum. Download the ZIP and `.sha256` file into
+Each download also has a checksum. Download the DMG and its `.dmg.sha256` file into
 the same directory, then check:
 
 ```sh
-shasum -a 256 -c usb-boop-macos-arm64.sha256
+shasum -a 256 -c usb-boop-macos-arm64.dmg.sha256
 ```
 
 Signing happens locally on the maintainer's Mac; private keys never enter

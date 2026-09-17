@@ -28,14 +28,26 @@ For example, `2026.09.17.4` is tagged as `v2026.09.17.4`.
 
 Published versions are append-only: do not move a published tag, replace an
 archive, or overwrite its checksum. A changed signature, stapled ticket, binary,
-or packaging requires a new version. This preserves existing downloads and
+or replacement packaging requires a new version. This preserves existing downloads and
 Homebrew's checksum expectations. In particular, converting an earlier ad-hoc
 release to Developer ID signing requires a new version.
+
+A new download format may be added to an existing release when its contained
+app matches the existing signed/stapled ZIP exactly. Do not replace any existing
+asset, checksum, or tag. Record the packaging source and separate DMG notarization
+receipt; run release verification after adding the files. This lets us offer a
+DMG for `2026.09.17.4` without rebuilding or re-signing its already approved app.
 
 Each stable release contains:
 
 - `usb-boop-macos-arm64.zip`, containing `usb-boop.app` for Apple Silicon;
 - `usb-boop-macos-arm64.sha256`, containing the final archive's checksum.
+
+The manual download also offers `usb-boop-macos-arm64.dmg` and
+`usb-boop-macos-arm64.dmg.sha256`. Its Nose Boop window contains the app and an
+Applications link. The DMG itself is Developer ID signed, notarized, and stapled;
+the contained app retains its own existing signature and ticket. Homebrew
+continues using the ZIP. See the [DMG runbook](development-runbook.md#dmg-installer).
 
 The checksum is calculated **after** stapling and repackaging. Publishing is the
 last local step, after validation succeeds. A draft release can hold the assets
