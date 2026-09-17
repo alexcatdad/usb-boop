@@ -105,9 +105,11 @@ Homebrew requirements:
 The quarantine-stripping `postflight_steps` block exists only because the app
 is ad-hoc signed rather than notarized. Remove it once notarization is in place.
 
-CI regenerates the cask on every PR and runs `brew style --cask` against it,
-which is the only point at which the generated Ruby is checked before it
-reaches the public tap.
+CI regenerates the cask on every PR, runs `brew style --cask`, trusts only the
+generated cask, and loads it with `HOMEBREW_DEVELOPER=1 brew info --cask`.
+Developer mode makes deprecated DSL options fail validation, even when style
+passes. The URL uses Homebrew's default verification; the former `verified:`
+option was deprecated in Homebrew 7.
 
 Install command:
 

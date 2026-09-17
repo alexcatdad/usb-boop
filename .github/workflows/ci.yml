@@ -78,3 +78,6 @@ jobs:
           cp "${RUNNER_TEMP}/tap/Casks/usb-boop.rb" \
             "$(brew --repository alexcatdad/caskcheck)/Casks/"
           brew style --cask alexcatdad/caskcheck/usb-boop
+          brew trust --cask alexcatdad/caskcheck/usb-boop
+          # Style alone does not reject deprecated cask DSL options.
+          HOMEBREW_DEVELOPER=1 brew info --cask alexcatdad/caskcheck/usb-boop
