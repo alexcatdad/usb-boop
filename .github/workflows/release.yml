@@ -80,6 +80,17 @@ jobs:
             assets/usb-boop-macos-arm64.sha256
           (cd assets && shasum -a 256 -c usb-boop-macos-arm64.sha256)
           ./scripts/verify_release_artifact.sh assets/usb-boop-macos-arm64.zip "$VERSION"
+          # ZIP remains the Homebrew artifact. When a DMG is offered too,
+          # independently check its outer ticket and the identical app inside.
+          if jq -e 'any(.assets[]; .name == "usb-boop-macos-arm64.dmg" or .name == "usb-boop-macos-arm64.dmg.sha256")' release.json > /dev/null; then
+            gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
+              --pattern usb-boop-macos-arm64.dmg \
+              --pattern usb-boop-macos-arm64.dmg.sha256 --dir assets
+            [[ $(wc -l < assets/usb-boop-macos-arm64.dmg.sha256 | tr -d ' ') == 1 ]]
+            LC_ALL=C grep -Eq '^[0-9a-f]{64}  usb-boop-macos-arm64\.dmg$' assets/usb-boop-macos-arm64.dmg.sha256
+            (cd assets && shasum -a 256 -c usb-boop-macos-arm64.dmg.sha256)
+            ./scripts/verify_dmg_artifact.sh assets/usb-boop-macos-arm64.dmg "$VERSION" assets/usb-boop-macos-arm64.zip
+          fi
           echo "archive=$(shasum -a 256 assets/usb-boop-macos-arm64.zip | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
   update-homebrew:
