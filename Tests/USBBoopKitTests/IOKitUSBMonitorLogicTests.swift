@@ -53,11 +53,11 @@ final class USBDeviceMergerTests: XCTestCase {
         XCTAssertEqual(result.locationID, 42)
     }
 
-    func test_merge_unknownSpeedFallsBackToExisting() {
+    func test_merge_unknownSpeedDoesNotPresentAnOldSpeedAsCurrent() {
         let device = makeDevice(id: 1, name: "D", speed: .unknown)
         let existing = makeDevice(id: 1, name: "D", speed: .usb3Gen2)
         let result = USBDeviceMerger.merge(device, withKnownDevice: existing)
-        XCTAssertEqual(result.speed, .usb3Gen2)
+        XCTAssertEqual(result.speed, .unknown)
     }
 
     func test_merge_knownSpeedOverridesExisting() {

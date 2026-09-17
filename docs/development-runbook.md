@@ -90,3 +90,30 @@ Removed `url verified:` in the generator and tap. Strict developer-mode cask
 loading fails for the original and passes for the corrected cask. Style passes,
 generator and tap output match exactly, and actionlint and shellcheck pass.
 The disposable validation tap and its scoped trust were removed afterward.
+
+## Monitoring reliability acceptance
+
+Registry access is metadata-only: no device opens, volume mounts, file-transfer
+reads or writes, elevation, or filesystem permission requests. Missing metadata
+is unknown; only explicit OS denial is access restricted. Retry is user-driven.
+
+Run the standard lint/build/test commands above after project generation.
+Tests inject registration failures, denied and partial snapshots, reconnects,
+restart, and wake reconciliation. Startup devices have first-seen timestamps,
+not invented connection times. Inspect the sandboxed release separately:
+
+1. Launch without opening the menu; confirm metadata enumeration and no startup alerts.
+2. Compare displayed link speed with System Information for available hardware.
+3. Connect a hub and read-only/inaccessible/unmounted storage, without opening
+   files or trying to determine volume access by probing it.
+4. Unplug/replug and sleep/wake; verify accurate state and no alert storms.
+5. Trigger a failed metadata read through the fixture tests; verify stale or
+   partial results are labelled and Retry is explicit.
+
+Physical reconnect, sleep/wake, read-only/inaccessible media checks remain
+unverified until performed on suitable hardware. Automated tests are separate
+from device acceptance.
+
+PR1 local validation: full Xcode tests, strict SwiftLint, actionlint, and
+shellcheck passed. Evidence: `/tmp/usb-boop-pr1-final.log`. No physical media
+access tests, logout, or sleep were performed.

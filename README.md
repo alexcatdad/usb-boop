@@ -62,6 +62,19 @@ specific commit. Each release also publishes a `.sha256` checksum.
 - Right-click any device to copy its info
 - Persists your notification and display preferences
 
+### What link speed means
+
+usb-boop reads USB registry metadata. Link speed is the negotiated connection
+rate, not a file-transfer benchmark. It never mounts volumes, opens device
+files, or reads/writes media contents. Read-only or inaccessible storage can
+still expose USB metadata. Missing speed information stays unknown; it does
+not mean the device or cable is faulty.
+
+Monitoring failures appear in the menu with an explicit Retry action. Previously
+observed information is labelled when it may be stale or incomplete. Devices
+already present at launch show when they were first seen, not an invented
+connection time.
+
 ### Speeds it recognizes
 
 | Label | Speed | Standard |

@@ -60,7 +60,7 @@ final class USBDeviceExtendedTests: XCTestCase {
 
         let summary = device.detailSummary
         XCTAssertFalse(summary.isEmpty, "Summary should still be valid with minimal fields")
-        XCTAssertTrue(summary.contains("Speed unavailable"), "Summary should contain the unknown speed label")
+        XCTAssertTrue(summary.contains("Link speed unavailable"), "Summary should contain the unknown speed label")
     }
 
     // MARK: - vendorProductSummary
@@ -109,7 +109,7 @@ final class USBDeviceExtendedTests: XCTestCase {
             speed: .unknown
         )
 
-        XCTAssertEqual(device.subtitle, "Speed unavailable")
+        XCTAssertEqual(device.subtitle, "Link speed unavailable")
         XCTAssertEqual(device.subtitle, device.speed.displayLabel)
     }
 

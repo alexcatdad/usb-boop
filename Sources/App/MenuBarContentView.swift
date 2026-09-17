@@ -6,6 +6,14 @@ struct MenuBarContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            if let message = model.monitoringMessage {
+                Text(message)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                if model.monitoringStatus.canRetry {
+                    Button("Retry") { model.refreshDevices() }
+                }
+            }
             if model.keepLatestResultPinned {
                 latestResultCard
             }
@@ -33,13 +41,16 @@ struct MenuBarContentView: View {
 
                     Spacer(minLength: 8)
 
-                    Text(device.speed.displayLabel)
+                    Text(device.linkSpeedSummary)
                         .font(.body.weight(.semibold).monospacedDigit())
                         .foregroundStyle(speedColor(for: device.speed))
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("\(device.name), \(device.speed.displayLabel)")
 
+                if let status = model.latestConnectionStatus {
+                    Text(status).font(.caption).foregroundStyle(.secondary)
+                }
                 Text(device.detailSummary)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -79,7 +90,7 @@ struct MenuBarContentView: View {
             }
 
             if model.visibleDevices.isEmpty {
-                Text("No USB devices visible.")
+                Text(model.currentDevices.isEmpty ? "No USB devices detected." : "USB hubs are hidden.")
                     .font(.callout)
                     .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -150,7 +161,7 @@ private struct DeviceRow: View {
 
                 Spacer(minLength: 8)
 
-                Text(device.speed.displayLabel)
+                Text(device.linkSpeedSummary)
                     .font(.callout.weight(.semibold).monospacedDigit())
                     .foregroundStyle(speedColor(for: device.speed))
             }
@@ -164,7 +175,8 @@ private struct DeviceRow: View {
                     Text(manufacturer)
                 }
                 Text("·")
-                Text(device.connectedAt, style: .relative)
+                Text(device.connectedAt == nil ? "Seen since" : "Connected")
+                Text(device.connectedAt ?? device.firstSeenAt, style: .relative)
                     .monospacedDigit()
             }
             .font(.caption)

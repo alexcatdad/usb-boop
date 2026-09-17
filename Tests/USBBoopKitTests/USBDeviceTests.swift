@@ -13,7 +13,7 @@ final class USBDeviceTests: XCTestCase {
             speed: .usb3Gen2
         )
 
-        XCTAssertEqual(device.notificationBody, "Samsung T7 connected at 10 Gbps")
+        XCTAssertEqual(device.notificationBody, "Samsung T7 — Link speed: 10 Gbps")
         XCTAssertTrue(device.detailSummary.contains("10 Gbps"))
         XCTAssertTrue(device.detailSummary.contains("Samsung"))
     }
@@ -25,7 +25,7 @@ final class USBDeviceTests: XCTestCase {
 
     func testSubtitleReturnsDisplayLabelForUnknownSpeed() {
         let device = USBDevice(id: 1, name: "D", speed: .unknown)
-        XCTAssertEqual(device.subtitle, "Speed unavailable")
+        XCTAssertEqual(device.subtitle, "Link speed unavailable")
     }
 
     func testVendorProductSummaryWithBothIDs() {
@@ -58,7 +58,7 @@ final class USBDeviceTests: XCTestCase {
     func testDetailSummaryUnknownSpeedNoTechnicalLabel() {
         let device = USBDevice(id: 1, name: "D", speed: .unknown)
         let summary = device.detailSummary
-        XCTAssertTrue(summary.contains("Speed unavailable"))
+        XCTAssertTrue(summary.contains("Link speed unavailable"))
         XCTAssertFalse(summary.contains("USB"))
     }
 }

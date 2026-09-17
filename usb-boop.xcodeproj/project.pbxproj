@@ -13,6 +13,7 @@
 		29D6735FB6F451657F9D3CB9 /* USBBoopLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 186DA8FB56C0ABE2C6D7838E /* USBBoopLog.swift */; };
 		2D3A2EC32E185B5511C0C3F6 /* MenuBarContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 217BE6D0074F0A91D5B68A11 /* MenuBarContentView.swift */; };
 		3B5F1616FC9EA4C0F0FB0A92 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1719836954D298A36455E2B /* AppModel.swift */; };
+		3BD815C67ECAC3780CBCE343 /* USBRegistryDeviceReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69BE290E0A215A0C36A974AF /* USBRegistryDeviceReader.swift */; };
 		4BCB673DE0BC796777D1895A /* USBDeviceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 139579B86BD5CA38D24EB2F1 /* USBDeviceTests.swift */; };
 		4D58BFD14F3DF32EB73A660A /* IOKitUSBMonitorLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B142599F5B74A70435C1444A /* IOKitUSBMonitorLogicTests.swift */; };
 		5237C13AE35F145CF3C302C9 /* USBBoopKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F87B1CD107B298956A80FC80 /* USBBoopKit.framework */; };
@@ -26,6 +27,7 @@
 		8268505676007C9F08CE45EF /* USBBoopKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F87B1CD107B298956A80FC80 /* USBBoopKit.framework */; };
 		96E17E54097AC215E34C304A /* USBBoopKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = F87B1CD107B298956A80FC80 /* USBBoopKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		ABCBEF382C406E676C24AD15 /* FixtureUSBMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 459FDBB6D54D4D672318E318 /* FixtureUSBMonitorTests.swift */; };
+		ACFB10D789FDB476E5C5E1F4 /* AppLifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3834228DFB41B57F61948FD6 /* AppLifecycle.swift */; };
 		B3C59796A7EE6E6409A30E22 /* USBMonitoring.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5DD2B7C3B0144D13BAC1DB9 /* USBMonitoring.swift */; };
 		BBB1988FCCE12AC814133E81 /* USBBoopKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F87B1CD107B298956A80FC80 /* USBBoopKit.framework */; };
 		BCB7D206B987D90958A14C86 /* MenuBarContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 217BE6D0074F0A91D5B68A11 /* MenuBarContentView.swift */; };
@@ -33,6 +35,8 @@
 		C4D6C9B889F85DE0F04109A2 /* FixtureUSBMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA659B96F66B77BF451E2D35 /* FixtureUSBMonitor.swift */; };
 		CD2209EFF5B8AB9451A9E538 /* IOKitUSBMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F601A747A518D1F7B427BAEB /* IOKitUSBMonitor.swift */; };
 		D5CC4BAB393F59B934095AC9 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC633E1C5B5DA068B5503794 /* SettingsView.swift */; };
+		D82CDE5312E16195C8C8F29A /* AppLifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3834228DFB41B57F61948FD6 /* AppLifecycle.swift */; };
+		D99E7111E9D72261A43E9934 /* MonitoringPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 423E8143CDBA6FBE88F50D4A /* MonitoringPresentationTests.swift */; };
 		DAED32A514B3F0F424F5FADC /* UserNotificationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58427184DD4A1946D808EAC /* UserNotificationCoordinator.swift */; };
 		DDCA894CBDD6C3306FAB6F99 /* USBMonitorFactoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F310F60EC9B1707CF2839B /* USBMonitorFactoryTests.swift */; };
 		DDE27545FFB660B6DF8B1D74 /* USBConnectionSpeedAllCasesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E05734061B19989F189B9C6 /* USBConnectionSpeedAllCasesTests.swift */; };
@@ -42,6 +46,8 @@
 		F088C5B13AA05B0EDE03A399 /* USBMonitorFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4959AB4C23A3CA76AFD3BAB1 /* USBMonitorFactory.swift */; };
 		F6680B2D163D3CF1E616C55B /* USBBoopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02ADFB3BE9477E416E8CF74D /* USBBoopApp.swift */; };
 		F7E52A50A56C454143CE3BEA /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1719836954D298A36455E2B /* AppModel.swift */; };
+		FC5732B3AE1A9705C81395CC /* USBMonitorRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D491993501087835F951069 /* USBMonitorRecoveryTests.swift */; };
+		FF129DAD75903D48C49534B3 /* USBRegistryAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650C86D4037C18B39006C1E6 /* USBRegistryAccess.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -115,13 +121,18 @@
 		223112FFA4516088CB75EEC8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		2932CC7B4F6A3C42B8BFB76B /* USBBoopKitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = USBBoopKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		323C0969CBBFF407AC5DA022 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		3834228DFB41B57F61948FD6 /* AppLifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLifecycle.swift; sourceTree = "<group>"; };
+		423E8143CDBA6FBE88F50D4A /* MonitoringPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonitoringPresentationTests.swift; sourceTree = "<group>"; };
 		459FDBB6D54D4D672318E318 /* FixtureUSBMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureUSBMonitorTests.swift; sourceTree = "<group>"; };
 		4959AB4C23A3CA76AFD3BAB1 /* USBMonitorFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBMonitorFactory.swift; sourceTree = "<group>"; };
 		4E05734061B19989F189B9C6 /* USBConnectionSpeedAllCasesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBConnectionSpeedAllCasesTests.swift; sourceTree = "<group>"; };
 		5159F2C8A39A130B60705383 /* NotificationCenterProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationCenterProtocol.swift; sourceTree = "<group>"; };
 		608FD5159EE45824AA6A00F0 /* usb-boop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "usb-boop.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		650C86D4037C18B39006C1E6 /* USBRegistryAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBRegistryAccess.swift; sourceTree = "<group>"; };
+		69BE290E0A215A0C36A974AF /* USBRegistryDeviceReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBRegistryDeviceReader.swift; sourceTree = "<group>"; };
 		7F7D8BB051DC2DD7629174A3 /* USBConnectionSpeedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBConnectionSpeedTests.swift; sourceTree = "<group>"; };
 		92D349A4212AE4178E8426C6 /* USBBoopAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = USBBoopAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9D491993501087835F951069 /* USBMonitorRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBMonitorRecoveryTests.swift; sourceTree = "<group>"; };
 		9E355E3B86CF7C749173D148 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		A0224E2F7A5482196332BF6A /* UserNotificationCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserNotificationCoordinatorTests.swift; sourceTree = "<group>"; };
 		A1719836954D298A36455E2B /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
@@ -188,6 +199,7 @@
 		43B292A17B28EDB022EEEA5D /* App */ = {
 			isa = PBXGroup;
 			children = (
+				3834228DFB41B57F61948FD6 /* AppLifecycle.swift */,
 				A1719836954D298A36455E2B /* AppModel.swift */,
 				223112FFA4516088CB75EEC8 /* Assets.xcassets */,
 				323C0969CBBFF407AC5DA022 /* Info.plist */,
@@ -220,6 +232,8 @@
 				BACEDE44CD013FE33736D8FA /* USBDevice.swift */,
 				4959AB4C23A3CA76AFD3BAB1 /* USBMonitorFactory.swift */,
 				D5DD2B7C3B0144D13BAC1DB9 /* USBMonitoring.swift */,
+				650C86D4037C18B39006C1E6 /* USBRegistryAccess.swift */,
+				69BE290E0A215A0C36A974AF /* USBRegistryDeviceReader.swift */,
 				C58427184DD4A1946D808EAC /* UserNotificationCoordinator.swift */,
 			);
 			path = USBBoopKit;
@@ -229,6 +243,7 @@
 			isa = PBXGroup;
 			children = (
 				E30BA9120F93849A53DD8445 /* AppModelTests.swift */,
+				423E8143CDBA6FBE88F50D4A /* MonitoringPresentationTests.swift */,
 			);
 			path = USBBoopAppTests;
 			sourceTree = "<group>";
@@ -255,6 +270,7 @@
 				139579B86BD5CA38D24EB2F1 /* USBDeviceTests.swift */,
 				0D28556BD43CA4B771998DD9 /* USBDeviceTests+Extended.swift */,
 				05F310F60EC9B1707CF2839B /* USBMonitorFactoryTests.swift */,
+				9D491993501087835F951069 /* USBMonitorRecoveryTests.swift */,
 				B1CB5CD4057F2C5FA17C125E /* USBRegistryDeviceReaderTests.swift */,
 				A0224E2F7A5482196332BF6A /* UserNotificationCoordinatorTests.swift */,
 			);
@@ -400,6 +416,8 @@
 				7DAD07B14BAF67843795FD02 /* USBDevice.swift in Sources */,
 				F088C5B13AA05B0EDE03A399 /* USBMonitorFactory.swift in Sources */,
 				B3C59796A7EE6E6409A30E22 /* USBMonitoring.swift in Sources */,
+				FF129DAD75903D48C49534B3 /* USBRegistryAccess.swift in Sources */,
+				3BD815C67ECAC3780CBCE343 /* USBRegistryDeviceReader.swift in Sources */,
 				DAED32A514B3F0F424F5FADC /* UserNotificationCoordinator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -408,6 +426,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D82CDE5312E16195C8C8F29A /* AppLifecycle.swift in Sources */,
 				F7E52A50A56C454143CE3BEA /* AppModel.swift in Sources */,
 				BCB7D206B987D90958A14C86 /* MenuBarContentView.swift in Sources */,
 				681381C841BEA2E531E5C58C /* SettingsView.swift in Sources */,
@@ -419,9 +438,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ACFB10D789FDB476E5C5E1F4 /* AppLifecycle.swift in Sources */,
 				3B5F1616FC9EA4C0F0FB0A92 /* AppModel.swift in Sources */,
 				0128255A0BA4190690E938D4 /* AppModelTests.swift in Sources */,
 				2D3A2EC32E185B5511C0C3F6 /* MenuBarContentView.swift in Sources */,
+				D99E7111E9D72261A43E9934 /* MonitoringPresentationTests.swift in Sources */,
 				D5CC4BAB393F59B934095AC9 /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -438,6 +459,7 @@
 				1657AB408A87D4E04A2EB65C /* USBDeviceTests+Extended.swift in Sources */,
 				4BCB673DE0BC796777D1895A /* USBDeviceTests.swift in Sources */,
 				DDCA894CBDD6C3306FAB6F99 /* USBMonitorFactoryTests.swift in Sources */,
+				FC5732B3AE1A9705C81395CC /* USBMonitorRecoveryTests.swift in Sources */,
 				733429A9C271E313CDE9253A /* USBRegistryDeviceReaderTests.swift in Sources */,
 				EE41FB17BF015F27203CF2FF /* UserNotificationCoordinatorTests.swift in Sources */,
 			);

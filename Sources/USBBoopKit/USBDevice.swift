@@ -11,7 +11,10 @@ public struct USBDevice: Identifiable, Equatable, Hashable, Sendable {
     public let locationID: UInt32?
     public let speed: USBConnectionSpeed
     public let isHub: Bool
-    public let connectedAt: Date
+    public let firstSeenAt: Date
+    public let connectedAt: Date?
+    /// Original USBSpeed value; future values remain available without guessing their meaning.
+    public let rawRegistrySpeed: Int?
 
     public init(
         id: UInt64,
@@ -23,7 +26,9 @@ public struct USBDevice: Identifiable, Equatable, Hashable, Sendable {
         locationID: UInt32? = nil,
         speed: USBConnectionSpeed,
         isHub: Bool = false,
-        connectedAt: Date = .now
+        firstSeenAt: Date? = nil,
+        connectedAt: Date? = nil,
+        rawRegistrySpeed: Int? = nil
     ) {
         self.id = id
         self.name = name
@@ -34,7 +39,9 @@ public struct USBDevice: Identifiable, Equatable, Hashable, Sendable {
         self.locationID = locationID
         self.speed = speed
         self.isHub = isHub
+        self.firstSeenAt = firstSeenAt ?? connectedAt ?? .now
         self.connectedAt = connectedAt
+        self.rawRegistrySpeed = rawRegistrySpeed
     }
 
     public var subtitle: String {
@@ -45,9 +52,11 @@ public struct USBDevice: Identifiable, Equatable, Hashable, Sendable {
         return speed.displayLabel
     }
 
-    public var notificationBody: String {
-        "\(name) connected at \(speed.displayLabel)"
+    public var linkSpeedSummary: String {
+        speed == .unknown || speed == .other ? speed.displayLabel : "Link speed: \(speed.displayLabel)"
     }
+
+    public var notificationBody: String { "\(name) — \(linkSpeedSummary)" }
 
     public var detailSummary: String {
         var details: [String] = [speed.displayLabel]
