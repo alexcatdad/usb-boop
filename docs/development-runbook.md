@@ -1,5 +1,44 @@
 # Resume development
 
+## Notification permission debugging (2026-09-17)
+
+In the sandboxed ad-hoc Debug app, clicking Enable notifications reached
+`UNUserNotificationCenter.requestAuthorization` but returned immediately with an
+`UNErrorDomain` code 1: "Notifications are not allowed for this application."
+The original UI discarded its localized description. No permission dialog
+appeared; this was distinct from a user declining a displayed prompt.
+
+Expose the returned error in the menu and Settings, log only its domain/code,
+and show an in-progress message while preventing duplicate Enable requests.
+Pending state must be cleared on stop and protected from an older request's
+completion after restart. A passive refresh that still reports not-determined
+must preserve the last request error. Startup/activation refresh without prompting.
+
+Moving the identical ad-hoc-signed diagnostic app from
+`/tmp/usb-boop-notifications-derived/Build/Products/Debug/usb-boop-dev.app` to
+`~/Applications/usb-boop-dev.app` resolved authorization. Alex confirmed it
+worked, and native Settings inspection showed "Connection notifications are
+enabled." Neither its code/signature nor its sandbox/USB entitlements changed
+for this comparison. Use the stable Applications location for local interactive
+acceptance; do not launch the temporary build directly. This establishes the
+location-dependent failure on this host, not a universal rule for every macOS
+version. Inspect only this app's diagnostic logs when troubleshooting:
+
+```sh
+/usr/bin/log show --last 5m --style compact \
+  --predicate 'process == "usb-boop-dev" AND subsystem == "com.alexcatdad.usb-boop"'
+```
+
+Do not clear system notification preferences, reset permission databases, or
+add push-notification entitlements to debug local banners. Native authorization is verified. Alex subsequently observed a connection banner
+and reported that its title/subtitle/body hierarchy was too verbose.
+The inspector times out while the app has only its menu-bar item and no open window.
+
+Local strict SwiftLint and all 126 tests pass, covering error detail, passive
+refresh, explicit retry, duplicate actions, and restart handling. Logs:
+`/tmp/usb-boop-notifications-lint.log` and
+`/tmp/usb-boop-notifications-tests.log`. This is not a release or notarization run.
+
 ## Inspect before changing code
 
 ```sh
@@ -200,8 +239,88 @@ debug_app=/tmp/usb-boop-menu-fix-derived/Build/Products/Debug/usb-boop-dev.app
 codesign --force --sign - "$debug_app/Contents/Frameworks/USBBoopKit.framework/Versions/A"
 codesign --force --sign - --entitlements Sources/App/usb-boop.entitlements "$debug_app"
 codesign --verify --deep --strict "$debug_app"
-open "$debug_app"
+installed_debug_app="$HOME/Applications/usb-boop-dev.app"
+mkdir -p "$HOME/Applications"
+# Quit an existing Debug instance before replacing its bundle.
+ditto "$debug_app" "$installed_debug_app"
+codesign --verify --deep --strict "$installed_debug_app"
+open "$installed_debug_app"
 ```
 
 Open the menu manually before attaching a native UI inspector: this accessory
 app may be unselectable by inspection tools when it has no visible windows.
+The temporary build directory is suitable for compilation, but notification
+acceptance on this host requires launching the copy in `~/Applications`.
+
+
+## Concise connection banners (2026-09-17)
+
+Single-device banners put the device name in the title and
+`Connected · Link speed: 10 Gbps` in the body. Leave the subtitle empty; technical
+USB generation labels remain available in the menu. Unknown speeds retain the
+explicit unavailable label. Grouped banners put the count in the title and use
+`Open usb-boop for link speeds.` as the body. Sound remains off by default.
+
+Updated existing content assertions, strict SwiftLint, and all 126 tests pass.
+The rebuilt, sandboxed Debug app was copied to `~/Applications/usb-boop-dev.app`
+and relaunched. The next real connection should verify the revised banner's
+native appearance; the test suite verifies its payload, not on-screen delivery.
+Logs: `/tmp/usb-boop-notification-copy-lint.log` and
+`/tmp/usb-boop-notification-copy-tests.log`.
+
+The initial Boop and Fast Loop icon proposals were superseded by the selected
+cat-themed Nose Boop identity below.
+
+
+## Nose Boop identity (2026-09-17)
+
+Alex selected Nose Boop as the lasting identity: a ginger cat boops a teal USB-C
+plug, and the app reports the connection's link speed. The canonical references
+are [the branding guide](branding.md), `Design/nose-boop-source.png`, and
+`Design/nose-boop-menu-source.png`. The earlier SVG icon was removed so future
+exports cannot accidentally restore the retired design.
+
+Regenerate every packaged image from the approved masters:
+
+```sh
+./scripts/generate_icon_assets.sh
+shellcheck scripts/generate_icon_assets.sh
+```
+
+The script uses macOS `sips` to resize the approved artwork, without changing the
+design. It updates all ten AppIcon sizes, the 1x/2x monochrome MenuBarIcon assets,
+README/site `docs/icon.png`, and `docs/favicon.png`. The menu-bar catalog marks
+its image as a template; `USBBoopApp` loads it instead of the generic cable symbol.
+Notifications inherit the app's compiled icon rather than attaching extra artwork.
+Keep the existing accessible menu-bar name, `usb-boop`.
+
+Validation: all asset dimensions checked; repeat generation produced identical
+hashes; full tests (126), strict SwiftLint, and ShellCheck passed. Browser previews
+verified the full-color artwork at 256/64/32/16 pixels, the 22-point menu mark on
+light/dark backgrounds, and the local website hero. The rebuilt sandboxed Debug
+bundle was installed in `~/Applications/usb-boop-dev.app`, registered with
+LaunchServices, and relaunched. Its installed AppIcon.icns hash matches the
+built bundle. No permission/cache database was reset. A subsequent native banner
+with the new icon remains a manual acceptance check.
+
+Logs: `/tmp/usb-boop-nose-boop-lint.log` and
+`/tmp/usb-boop-nose-boop-tests.log`. Publication follows the repository's main-branch workflows. Alex subsequently
+authorized merging PR #12; verify every check on its current head before the
+squash merge. This approval supersedes the earlier instruction to keep it in draft.
+
+Alex found the first detailed menu-bar mark hard to recognize. It was simplified
+to a cat-head silhouette, then given a bold transparent USB-trident cutout at
+Alex's request. The final mark was previewed at 22 points in light/dark appearances.
+The full-color Nose Boop artwork is unchanged. Menu dismissal behavior is being
+clarified separately; no speculative menu lifecycle change was made.
+
+
+## PR #12 delivery authorization (2026-09-17)
+
+Alex explicitly requested merging to main after the local notification and
+Nose Boop work. Mark the PR ready, review current-head checks and findings, and
+squash-merge only when all checks pass. Main pushes trigger the existing release
+workflow. The earlier accepted notarization applies only to its submitted build;
+it does not notarize subsequent CI artifacts. Report merge, publication, and
+notarization as separate outcomes. Menu-dismissal clarification and a native
+banner with the final icon remain manual acceptance follow-ups.

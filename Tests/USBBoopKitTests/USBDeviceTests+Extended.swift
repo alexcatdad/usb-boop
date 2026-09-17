@@ -14,7 +14,7 @@ final class USBDeviceExtendedTests: XCTestCase {
         )
 
         let body = device.notificationBody
-        XCTAssertTrue(body.contains("Logitech Webcam"), "Body should contain the device name")
+        XCTAssertFalse(body.contains(device.name), "The device name belongs in the notification title")
         XCTAssertTrue(body.contains("480 Mbps"), "Body should contain the speed display label")
     }
 
@@ -27,7 +27,7 @@ final class USBDeviceExtendedTests: XCTestCase {
 
         let body = device.notificationBody
         XCTAssertFalse(body.isEmpty, "Notification body should not be empty even without a manufacturer")
-        XCTAssertTrue(body.contains("Generic Device"), "Body should still contain the device name")
+        XCTAssertFalse(body.contains(device.name), "The device name belongs in the notification title")
         XCTAssertTrue(body.contains("12 Mbps"), "Body should contain the speed display label")
     }
 

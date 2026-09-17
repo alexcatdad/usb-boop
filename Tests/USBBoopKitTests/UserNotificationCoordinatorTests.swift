@@ -137,10 +137,10 @@ final class UserNotificationCoordinatorTests: XCTestCase {
         XCTAssertTrue(sent)
         let request = try XCTUnwrap(mock.addedRequests.first)
         XCTAssertTrue(request.identifier.hasPrefix("usb-boop."))
-        XCTAssertEqual(request.content.title, "USB Connected")
+        XCTAssertEqual(request.content.title, device().name)
         XCTAssertEqual(request.content.body, device().notificationBody)
         XCTAssertTrue(request.content.body.contains("10 Gbps"))
-        XCTAssertEqual(request.content.subtitle, device().speed.technicalLabel)
+        XCTAssertEqual(request.content.subtitle, "")
         XCTAssertNil(request.content.sound)
         XCTAssertEqual(request.content.threadIdentifier, "usb-boop.connections")
     }
@@ -163,8 +163,8 @@ final class UserNotificationCoordinatorTests: XCTestCase {
         let sent = await coord.sendConnectionNotification(for: [device(), device(id: 43), device(id: 44, isHub: true)])
         XCTAssertTrue(sent)
         let request = try XCTUnwrap(mock.addedRequests.first)
-        XCTAssertEqual(request.content.title, "USB Devices Connected")
-        XCTAssertEqual(request.content.body, "2 devices connected. Open usb-boop from the menu bar for link speeds.")
+        XCTAssertEqual(request.content.title, "2 USB devices connected")
+        XCTAssertEqual(request.content.body, "Open usb-boop for link speeds.")
         XCTAssertEqual(request.content.subtitle, "")
     }
 

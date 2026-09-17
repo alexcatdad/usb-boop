@@ -126,6 +126,7 @@ struct MenuBarContentView: View {
                 Text(model.notificationAuthorizationSummary).font(.caption).foregroundStyle(.secondary)
                 if model.notificationsEnabled, model.canRequestNotifications {
                     Button("Enable notifications") { Task { await model.setNotificationsEnabled(true) } }
+                        .disabled(model.isRequestingNotificationAuthorization)
                 }
             }
             HStack {

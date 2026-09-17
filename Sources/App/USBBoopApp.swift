@@ -13,7 +13,7 @@ struct USBBoopApp: App {
     }
 
     var body: some Scene {
-        MenuBarExtra("usb-boop", systemImage: "cable.connector") {
+        MenuBarExtra("usb-boop", image: "MenuBarIcon") {
             MenuBarContentView(model: model)
         }
         .menuBarExtraStyle(.window)
