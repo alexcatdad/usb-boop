@@ -81,3 +81,101 @@ jobs:
           brew trust --cask alexcatdad/caskcheck/usb-boop
           # Style alone does not reject deprecated cask DSL options.
           HOMEBREW_DEVELOPER=1 brew info --cask alexcatdad/caskcheck/usb-boop
+
+  linux:
+    name: Linux (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build g++ qt6-base-dev qt6-wayland-dev libudev-dev pkg-config xvfb weston dpkg-dev
+      - name: Build, test and package
+        run: ./scripts/build_linux_packages.sh build/linux 2026.01.01.0 DEB
+      - name: X11 and Wayland smoke
+        run: dbus-run-session -- ./scripts/smoke_linux_desktop.sh
+      - name: Install and verify DEB
+        run: |
+          docker run --rm -v "$PWD/build/linux:/packages:ro" -v "$PWD/scripts:/scripts:ro" ubuntu:24.04 bash -eu -c '
+            apt-get update
+            DEBIAN_FRONTEND=noninteractive apt-get install -y /packages/usb-boop-linux-*.deb python3 dbus-daemon
+            dbus-run-session -- /scripts/verify_linux_install.sh 2026.01.01.0
+          '
+
+      - name: Fedora RPM build and install
+        run: |
+          mkdir -p build/rpm
+          docker run --rm -v "$PWD:/src:ro" -v "$PWD/build/rpm:/output" fedora:44 bash -eu -c '
+            dnf install -y gcc-c++ cmake ninja-build qt6-qtbase-devel qt6-qtwayland-devel systemd-devel pkgconf-pkg-config rpm-build python3 dbus-daemon
+            cp -a /src /work
+            cd /work
+            useradd -m builder
+            chown -R builder:builder /work
+            runuser -u builder -- ./scripts/build_linux_packages.sh build/fedora 2026.01.01.0 RPM
+            cp build/fedora/*.rpm /output/
+          '
+          docker run --rm -v "$PWD/build/rpm:/packages:ro" -v "$PWD/scripts:/scripts:ro" fedora:44 bash -eu -c '
+            dnf install -y /packages/usb-boop-linux-*.rpm python3 dbus-daemon
+            /scripts/verify_linux_install.sh 2026.01.01.0
+          '
+      - name: Upload DEB
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: linux-${{ matrix.runner }}
+          path: |
+            build/linux/*.deb
+            build/rpm/*.rpm
+          if-no-files-found: error
+
+  linux-sanitizers:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build g++ qt6-base-dev libudev-dev pkg-config
+      - name: Sanitizer tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+          ASAN_OPTIONS: detect_leaks=0
+        run: |
+          cmake -S linux -B build/sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build/sanitize
+          ctest --test-dir build/sanitize --output-on-failure
+
+  linux-homebrew:
+    name: Linux Homebrew (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: Homebrew/actions/setup-homebrew@fccef3b26268fc4a788fd7ad7c189f3a105cbf13
+      - name: Source install and test
+        env:
+          SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          source_url="https://github.com/$GITHUB_REPOSITORY/archive/$SOURCE_COMMIT.tar.gz"
+          curl --fail --location "$source_url" -o "$RUNNER_TEMP/source.tar.gz"
+          source_sha=$(sha256sum "$RUNNER_TEMP/source.tar.gz" | cut -d' ' -f1)
+          brew tap-new alexcatdad/formulacheck --no-git
+          ./scripts/update_homebrew_tap.sh --linux "$(brew --repository alexcatdad/formulacheck)" 2026.01.01.0 "$source_sha" "$source_url"
+          brew style --formula alexcatdad/formulacheck/usb-boop
+          brew audit --strict --formula alexcatdad/formulacheck/usb-boop
+          brew install --build-from-source alexcatdad/formulacheck/usb-boop
+          brew test alexcatdad/formulacheck/usb-boop

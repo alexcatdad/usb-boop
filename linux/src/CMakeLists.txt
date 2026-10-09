@@ -1,0 +1,5 @@
+include(backend.cmake)
+include(desktop.cmake)
+add_executable(usb-boop main.cpp ../resources/resources.qrc)
+target_link_libraries(usb-boop PRIVATE boop_desktop)
+target_compile_definitions(usb-boop PRIVATE USB_BOOP_VERSION="${USB_BOOP_VERSION}")

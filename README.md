@@ -5,7 +5,7 @@
 <h1 align="center">usb-boop</h1>
 
 <p align="center">
-  A native macOS menu bar app that detects USB devices the moment they connect<br>and tells you the negotiated link speed — instantly.
+  A USB connection companion for macOS and Linux that detects devices as they connect<br>and tells you the negotiated link speed.
 </p>
 
 <p align="center">
@@ -20,7 +20,7 @@
 
 ## Why
 
-Plugging in a USB device and wondering *"did it actually connect at full speed?"* shouldn't require digging through System Information. usb-boop lives in your menu bar, watches IOKit for attach events, and shows the device name and negotiated link speed. Optional quiet banners group connections arriving within a one-second window.
+Plugging in a USB device and wondering *"did it actually connect at full speed?"* shouldn't require digging through system information. usb-boop lives in your menu bar or Linux system tray and shows the device name and negotiated link speed. It watches IOKit on macOS and udev on Linux. Optional quiet banners group connections arriving within a one-second window.
 
 Perfect for testing cables, hubs, and ports.
 
@@ -31,6 +31,8 @@ notifications, menu bar, and website. See the [branding guide](docs/branding.md)
 for the canonical artwork and future design references.
 
 ## Install
+
+### macOS
 
 ```sh
 brew install --cask alexcatdad/tap/usb-boop
@@ -43,6 +45,28 @@ Applications and eject the installer. A ZIP download remains available in
 
 Starting with `2026.09.17.4`, releases are signed with Developer ID and notarized
 by Apple. Open the app normally; no quarantine removal is needed.
+
+### Linux
+
+The separate Qt 6 app supports x86_64 and ARM64 on Ubuntu 24.04+ and Fedora 44+.
+It offers a tray icon and a regular device window, including on desktops without
+a tray host. GNOME may need an AppIndicator extension for its tray icon; the
+application launcher always provides access to the window.
+
+```sh
+brew install --formula alexcatdad/tap/usb-boop
+usb-boop
+```
+
+DEB and RPM packages are prepared for Linux releases. Install the package matching
+your architecture with `sudo apt install ./usb-boop-linux-x86_64.deb` or
+`sudo dnf install ./usb-boop-linux-x86_64.rpm`; ARM64 files use `aarch64` in their
+download names. These formats become available with the first Linux release.
+
+The app runs as your ordinary user. It reads cached USB metadata from sysfs and
+listens for udev events; it does not open USB device nodes or mount storage.
+See [Linux development and validation](docs/linux-development.md) for source
+builds, desktop integration, dependency notices and verification limits.
 
 ### Verifying a download
 
@@ -96,6 +120,8 @@ connection time.
 
 ## Build from source
 
+### macOS
+
 Requires Xcode 16+ and Apple Silicon.
 
 ```sh
@@ -116,6 +142,21 @@ xcodebuild -project usb-boop.xcodeproj -scheme usb-boop \
 
 Debug builds use `usb-boop-dev` and a separate bundle identifier, so preferences,
 notifications, and login registration are isolated from the Homebrew install.
+
+### Linux
+
+Install a C++20 compiler, CMake, Ninja, Qt 6.4+ development libraries (Core,
+Widgets, DBus, Network and Test), and libudev development headers. Then:
+
+```sh
+cmake -S linux -B build/linux -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/linux
+QT_QPA_PLATFORM=offscreen ctest --test-dir build/linux --output-on-failure
+build/linux/src/usb-boop --fixtures
+build/linux/src/usb-boop --list --json
+```
+
+The Linux app has an independent build; it does not compile or alter the Mac app.
 
 ### Development mode
 
@@ -138,6 +179,7 @@ Sources/
 Tests/
   USBBoopKitTests/        Framework unit + integration tests
   USBBoopAppTests/        App model tests
+linux/                    Separate C++20/Qt 6 app, USB backend and tests
 ```
 
 ## Release model
