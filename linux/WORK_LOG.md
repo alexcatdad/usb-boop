@@ -6,10 +6,10 @@
 - [x] USB backend and deterministic tests.
 - [x] Desktop feature parity and deterministic tests.
 - [x] DEB/RPM packaging and clean x86_64 installation verification.
-- [ ] Linux x86_64/ARM64 final CI, Mac regression CI, security checks.
-- [x] Homebrew formula, generator and tap CI implemented (native install CI pending).
+- [x] Linux x86_64/ARM64 native CI and Mac regression CI pass on reviewed application commit 598b69e.
+- [x] Homebrew formula, generator and native source install CI pass on both architectures.
 - [x] Independent review and repairs.
-- [x] Both PRs opened and attached (app #17, tap #5; final cross-links pending).
+- [x] Both PRs opened, attached and cross-linked (app #17, tap #5).
 - [ ] Final exact-commit CI passes.
 
 ## Validation evidence
@@ -31,8 +31,15 @@ Record commands, results and remaining environmental limitations here.
   builds, tests and runtime-only DEB/RPM installs pass on x86_64 via Podman.
 - Ubuntu Xvfb/X11 and Weston/headless Wayland fixture startup checks pass.
 - Local address/undefined-behavior sanitizer build and all four suites pass.
-- Initial PR CI passes Mac app tests, cask validation, C++ CodeQL, sanitizer tests,
-  formatting and zizmor. An inline shellcheck filename-handling finding is repaired.
-  Final exact-commit checks remain pending; inspect app #17 and tap #5 for evidence.
+- Reviewed commit `598b69eae07c445cce2869edecbb83825651ca46` passes native Linux
+  build/test/DEB/RPM clean installation and X11/Wayland checks on both architectures,
+  Homebrew source install/style/audit/tests on both architectures, Mac app tests,
+  SwiftLint, cask validation, C++ CodeQL, sanitizer tests, formatting, workflow lint
+  and zizmor. Swift CodeQL remains pending at this implementation-stage checkpoint.
+  Final exact-commit results are maintained in the linked PRs:
+  https://github.com/alexcatdad/usb-boop/pull/17 and
+  https://github.com/alexcatdad/homebrew-tap/pull/5.
 - Independent review repaired resume event replay, same-instance metadata recovery,
   denied-access retries, notification delivery recovery and platform delivery gates.
+- Final release-verifier review requires exact version equality, rejecting a
+  package whose version merely contains the expected version as a substring.
