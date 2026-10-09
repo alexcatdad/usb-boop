@@ -16,20 +16,27 @@ older one.
 
 ## What This App Does
 
-`usb-boop` runs sandboxed and:
+The macOS app runs sandboxed and:
 
 - reads USB device metadata through IOKit, using the
   `com.apple.security.device.usb` entitlement
 - stores its settings in its own sandbox container
 - posts local user notifications
 
-It makes **no network calls** and has **no telemetry, analytics, or tracking**.
-It has no third-party Swift dependencies. Any change to those properties should
+The Linux app runs as an ordinary user. It reads cached USB metadata from sysfs
+and listens for udev events; it never opens device nodes, mounts storage, claims
+interfaces, or performs device I/O. It stores preferences in user settings,
+delivers notifications over the session D-Bus, and creates an XDG autostart entry
+only when enabled. It dynamically links Qt and libudev and does not install a
+system daemon or host udev rules.
+
+Neither app makes network requests or has **telemetry, analytics, or tracking**.
+The macOS app has no third-party Swift dependencies. Any change to those properties should
 be treated as a security-relevant change.
 
 ## Release Trust
 
-Starting with `2026.09.17.4`, releases are Developer ID signed locally and
+Starting with `2026.09.17.4`, macOS releases are Developer ID signed locally and
 notarized by Apple. The private key and notarization credentials remain in the
 maintainer's local Keychain. GitHub Actions receives only public artifacts and
 verifies the expected team, bundle identity, version, Hardened Runtime,
@@ -48,6 +55,11 @@ release; do not bypass Gatekeeper to install an older build.
 You can also build from source or check the `usb-boop-macos-arm64.sha256`
 published with each release. Checksums detect corruption; they do not replace
 the Developer ID signature or notarization.
+
+Linux packages have architecture-specific checksums and installation checks.
+The Linux Homebrew formula builds an immutable, checksummed source archive.
+These Linux artifacts do not use Apple signing or notarization. The initial
+`0.0.0-dev` formula is an unreleased preview pinned to the implementation commit.
 
 ## Automated Checks
 

@@ -75,6 +75,74 @@ Device device(QString id = "1", bool hub = false) {
   result.connectedAt = result.firstSeenAt;
   return result;
 }
+
+// Independent reader of the two Desktop Entry parsing layers, restricted to
+// literal arguments (our login entry deliberately has no variable field codes).
+std::optional<QStringList> desktopArguments(const QByteArray &data) {
+  QString command;
+  for (const QByteArray &line : data.split('\n')) {
+    if (line.startsWith("Exec="))
+      command = QString::fromUtf8(line.mid(5));
+  }
+  QString decoded;
+  for (qsizetype index = 0; index < command.size(); ++index) {
+    QChar character = command[index];
+    if (character == QLatin1Char('\\')) {
+      if (++index == command.size())
+        return std::nullopt;
+      character = command[index];
+      if (character == QLatin1Char('s'))
+        character = QLatin1Char(' ');
+      else if (character == QLatin1Char('n'))
+        character = QLatin1Char('\n');
+      else if (character == QLatin1Char('t'))
+        character = QLatin1Char('\t');
+      else if (character == QLatin1Char('r'))
+        character = QLatin1Char('\r');
+      else if (character != QLatin1Char('\\'))
+        return std::nullopt;
+    }
+    decoded += character;
+  }
+  QStringList arguments;
+  QString argument;
+  bool quoted = false, started = false;
+  for (qsizetype index = 0; index < decoded.size(); ++index) {
+    QChar character = decoded[index];
+    if (character == QLatin1Char('"')) {
+      quoted = !quoted;
+      started = true;
+      continue;
+    }
+    if (character == QLatin1Char('\\')) {
+      if (!quoted || ++index == decoded.size())
+        return std::nullopt;
+      character = decoded[index];
+      if (character != QLatin1Char('"') && character != QLatin1Char('\\') &&
+          character != QLatin1Char('$') && character != QLatin1Char('`'))
+        return std::nullopt;
+    } else if (quoted && (character == QLatin1Char('$') || character == QLatin1Char('`'))) {
+      return std::nullopt;
+    } else if (character == QLatin1Char('%')) {
+      if (++index == decoded.size() || decoded[index] != QLatin1Char('%'))
+        return std::nullopt;
+    } else if (!quoted && character.isSpace()) {
+      if (started) {
+        arguments.append(argument);
+        argument.clear();
+        started = false;
+      }
+      continue;
+    }
+    argument += character;
+    started = true;
+  }
+  if (quoted)
+    return std::nullopt;
+  if (started)
+    arguments.append(argument);
+  return arguments;
+}
 class DesktopTests : public QObject {
   Q_OBJECT
 private slots:
@@ -205,6 +273,33 @@ private slots:
     window.close();
     QVERIFY(!window.isVisible());
   }
+  void latestMetadataRecoveryAndDisconnectedCache() {
+    QTemporaryDir dir;
+    QSettings settings(dir.filePath("settings.ini"), QSettings::IniFormat);
+    FakeMonitor monitor;
+    FakeNotifications alerts;
+    FakeAutostart startup;
+    AppModel model(&monitor, &alerts, &startup, &settings);
+    Device partial = device("recover");
+    partial.name = "USB Device";
+    partial.speed = Speed::Unknown;
+    monitor.attach(partial);
+    QVERIFY(model.latest());
+    QCOMPARE(model.latest()->speed, Speed::Unknown);
+    Device recovered = partial;
+    recovered.name = "Recovered SSD";
+    recovered.speed = Speed::Gen2;
+    recovered.manufacturer = "Recovered manufacturer";
+    monitor.value.devices = {recovered};
+    emit monitor.devicesChanged(monitor.value.devices);
+    QCOMPARE(model.latest()->speed, Speed::Gen2);
+    QCOMPARE(model.latest()->name, QString("Recovered SSD"));
+    QCOMPARE(model.latest()->connectedAt, partial.connectedAt);
+    monitor.detach(recovered);
+    QVERIFY(model.latest());
+    QCOMPARE(model.latest()->name, QString("Recovered SSD"));
+    QCOMPARE(model.latestStatus(), QString("Disconnected"));
+  }
   void hiddenHubEmptyAndSorting() {
     QTemporaryDir dir;
     QSettings settings(dir.filePath("settings.ini"), QSettings::IniFormat);
@@ -260,6 +355,27 @@ private slots:
     emit monitor.statusChanged(monitor.current);
     model.flushNotifications();
     QVERIFY(alerts.groups.isEmpty());
+  }
+  void autostartQuotedPathRoundtrip() {
+    QTemporaryDir dir;
+    const QString executable = dir.filePath(QStringLiteral("app space \\ $ \" ` % end"));
+    QFile file(executable);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write("#!/bin/sh\n");
+    file.close();
+    QVERIFY(file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner |
+                                QFileDevice::ExeOwner));
+    XdgAutostart startup(executable, dir.path());
+    QVERIFY(startup.setEnabled(true));
+    QFile entry(dir.filePath("autostart/usb-boop.desktop"));
+    QVERIFY(entry.open(QIODevice::ReadOnly));
+    const auto arguments = desktopArguments(entry.readAll());
+    QVERIFY(arguments);
+    QCOMPARE(*arguments, QStringList({executable, "--background"}));
+    const QString unsupported = dir.filePath("app=bad");
+    QVERIFY(QFile::copy(executable, unsupported));
+    XdgAutostart bad(unsupported, dir.path());
+    QVERIFY(!bad.setEnabled(true));
   }
   void autostartRoundtrip() {
     QTemporaryDir dir;

@@ -12,8 +12,11 @@ AppModel::AppModel(Monitor *monitor, NotificationService *notifications,
   connect(monitor_, &Monitor::devicesChanged, this, [this](const QList<Device> &devices) {
     devices_ = devices;
     QSet<QString> current;
-    for (const auto &device : devices_)
+    for (const auto &device : devices_) {
       current.insert(device.id);
+      if (latest_ && latest_->id == device.id)
+        latest_ = device;
+    }
     announced_.intersect(current);
     emit changed();
   });

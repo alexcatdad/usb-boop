@@ -44,6 +44,19 @@ public:
     else if (available)
       drain();
   }
+  void reconcileAfterWake() override {
+    if (!running || status().issue == Issue::AccessRestricted)
+      return;
+    // Discard pre-sleep netlink events and subscribe before the silent recovery snapshot.
+    suspendSubscription();
+    const bool available = subscribe();
+    setRegistrationAvailable(available, false);
+    ReconciliationMonitor::reconcileAfterWake();
+    if (!available && status().issue != Issue::AccessRestricted)
+      registrationRetry.start();
+    else if (available)
+      drain();
+  }
   void stop() override {
     suspendSubscription();
     ReconciliationMonitor::stop();

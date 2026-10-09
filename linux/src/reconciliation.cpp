@@ -41,8 +41,10 @@ void ReconciliationMonitor::refresh() {
   reconcile(false);
 }
 void ReconciliationMonitor::reconcileAfterWake() {
-  if (running && currentStatus.issue != Issue::AccessRestricted)
-    reconcile(false);
+  if (running && currentStatus.issue != Issue::AccessRestricted) {
+    pendingAttachments.clear();
+    reconcile(false, true);
+  }
 }
 void ReconciliationMonitor::publishObservation(ObservationKind kind, const Device &device) {
   auto safe = device;
@@ -71,7 +73,7 @@ void ReconciliationMonitor::deviceEvent(bool added, const QString &topology,
   }
   reconcile(false);
 }
-void ReconciliationMonitor::reconcile(bool baseline) {
+void ReconciliationMonitor::reconcile(bool baseline, bool resumed) {
   auto next = reader();
   if (next.failed) {
     current.failed = true;
@@ -91,7 +93,7 @@ void ReconciliationMonitor::reconcile(bool baseline) {
     old.insert(device.id, device);
   const auto now = QDateTime::currentDateTimeUtc();
   for (auto &device : next.devices) {
-    if (baseline)
+    if (baseline || resumed)
       initialIds.insert(device.id);
     const bool eventMatches = pendingAttachments.contains(device.topology) &&
                               (pendingAttachments.value(device.topology).isEmpty() ||

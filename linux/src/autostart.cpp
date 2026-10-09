@@ -21,12 +21,14 @@ bool XdgAutostart::setEnabled(bool value) {
     return false;
   }
   if (!QFileInfo(executable_).isExecutable() || executable_.contains('\n') ||
-      executable_.contains('\r')) {
+      executable_.contains('\r') || executable_.contains('\t') || executable_.contains('=')) {
     error_ = "The installed executable is unavailable.";
     return false;
   }
   QDir().mkpath(QFileInfo(path_).absolutePath());
-  // Desktop Entry Exec has its own escaping and percent field codes.
+  // Encode both Desktop Entry string-value and quoted Exec argument escaping.
+  // A literal backslash requires four written backslashes; $, ` and quotes
+  // require two before the character. Percent is a literal field-code escape.
   QString escaped;
   for (const QChar character : executable_) {
     if (character == QLatin1Char('\\'))

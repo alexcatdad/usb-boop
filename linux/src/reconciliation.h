@@ -24,7 +24,7 @@ protected:
   bool running = false;
 
 private:
-  void reconcile(bool baseline);
+  void reconcile(bool baseline, bool resumed = false);
   void publishObservation(ObservationKind kind, const Device &device);
   std::function<Snapshot()> reader;
   Snapshot current;

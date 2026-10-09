@@ -282,6 +282,30 @@ private slots:
     QVERIFY(monitor.subscribed);
     QCOMPARE(monitor.status().state, State::Monitoring);
   }
+  void resumeDiscardsQueuedAttachments() {
+    Snapshot source;
+    ReconciliationMonitor monitor([&] { return source; });
+    QSignalSpy attached(&monitor, &Monitor::attached);
+    QSignalSpy observations(&monitor, &Monitor::observation);
+    monitor.start();
+    monitor.deviceEvent(true, QStringLiteral("1-1"), QStringLiteral("1-1@1:2"));
+    source.devices = {makeDevice()};
+    monitor.reconcileAfterWake();
+    QCOMPARE(attached.count(), 0);
+    QCOMPARE(observations.count(), 1);
+    QCOMPARE(qvariant_cast<Observation>(observations.first().first()).kind,
+             ObservationKind::FirstSeen);
+    QVERIFY(!monitor.snapshot().devices.first().connectedAt.isValid());
+    // An add already represented by the wake snapshot must not replay a banner.
+    monitor.deviceEvent(true, QStringLiteral("1-1"), QStringLiteral("1-1@1:2"));
+    QCOMPARE(attached.count(), 0);
+    auto afterWake = makeDevice(QStringLiteral("1-2@1:3"));
+    afterWake.topology = QStringLiteral("1-2");
+    source.devices.append(afterWake);
+    monitor.deviceEvent(true, afterWake.topology, afterWake.id);
+    QCOMPARE(attached.count(), 1);
+    QCOMPARE(qvariant_cast<Device>(attached.first().first()).id, afterWake.id);
+  }
   void fixtures() {
     QScopedPointer<Monitor> monitor(makeMonitor(true));
     QSignalSpy attached(monitor.data(), &Monitor::attached);
