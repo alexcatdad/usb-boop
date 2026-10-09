@@ -1,4 +1,4 @@
-add_executable(desktop_test desktop_test.cpp)
+add_executable(desktop_test desktop_test.cpp ../resources/resources.qrc)
 target_link_libraries(desktop_test PRIVATE boop_desktop Qt6::Test)
 add_test(NAME desktop COMMAND desktop_test)
 set_tests_properties(desktop PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

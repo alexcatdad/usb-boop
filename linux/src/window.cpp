@@ -3,11 +3,16 @@
 #include <QCheckBox>
 #include <QClipboard>
 #include <QCloseEvent>
+#include <QDBusConnection>
+#include <QDBusPendingCallWatcher>
+#include <QDBusPendingReply>
+#include <QDBusServiceWatcher>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QGroupBox>
 #include <QLabel>
 #include <QMenu>
+#include <QPainter>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QShortcut>
@@ -137,6 +142,22 @@ MainWindow::MainWindow(AppModel *model, bool trayEnabled, QWidget *parent)
   menu->addAction("Quit", qApp, &QApplication::quit);
   tray_->setContextMenu(menu);
   tray_->setToolTip("usb-boop — USB connection speeds");
+  auto bus = QDBusConnection::sessionBus();
+  bus.connect("org.freedesktop.portal.Desktop", "/org/freedesktop/portal/desktop",
+              "org.freedesktop.portal.Settings", "SettingChanged", this,
+              SLOT(appearanceChanged(QString, QString, QDBusVariant)));
+  auto *appearanceWatch = new QDBusServiceWatcher("org.freedesktop.portal.Desktop", bus,
+                                                  QDBusServiceWatcher::WatchForOwnerChange, this);
+  connect(appearanceWatch, &QDBusServiceWatcher::serviceOwnerChanged, this,
+          [this](const QString &, const QString &, const QString &owner) {
+            ++appearanceRevision_;
+            appearancePreference_ = 0;
+            updateTrayIcon();
+            if (!owner.isEmpty())
+              readAppearance();
+          });
+  updateTrayIcon();
+  readAppearance();
   if (trayEnabled && QSystemTrayIcon::isSystemTrayAvailable())
     tray_->show();
   connect(tray_, &QSystemTrayIcon::activated, this,
@@ -165,6 +186,55 @@ MainWindow::MainWindow(AppModel *model, bool trayEnabled, QWidget *parent)
 }
 bool MainWindow::usableTray() const {
   return tray_->isVisible() && QSystemTrayIcon::isSystemTrayAvailable();
+}
+void MainWindow::readAppearance() {
+  auto message = QDBusMessage::createMethodCall("org.freedesktop.portal.Desktop",
+                                                "/org/freedesktop/portal/desktop",
+                                                "org.freedesktop.portal.Settings", "Read");
+  message << QString("org.freedesktop.appearance") << QString("color-scheme");
+  const auto revision = appearanceRevision_;
+  auto *watcher =
+      new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(message, 1000), this);
+  connect(watcher, &QDBusPendingCallWatcher::finished, this, [this, revision, watcher] {
+    QDBusPendingReply<QDBusVariant> reply = *watcher;
+    watcher->deleteLater();
+    if (!reply.isError() && revision == appearanceRevision_)
+      appearanceChanged("org.freedesktop.appearance", "color-scheme", reply.value());
+  });
+}
+void MainWindow::appearanceChanged(const QString &group, const QString &key,
+                                   const QDBusVariant &value) {
+  if (group != "org.freedesktop.appearance" || key != "color-scheme")
+    return;
+  QVariant preference = value.variant();
+  // Older Settings.Read replies wrap the setting in an additional variant.
+  if (preference.metaType() == QMetaType::fromType<QDBusVariant>())
+    preference = qvariant_cast<QDBusVariant>(preference).variant();
+  bool valid = false;
+  const auto scheme = preference.toUInt(&valid);
+  if (!valid)
+    return;
+  ++appearanceRevision_;
+  appearancePreference_ = scheme <= 2 ? scheme : 0;
+  updateTrayIcon();
+}
+void MainWindow::updateTrayIcon() {
+  const bool dark =
+      appearancePreference_ == 1 ||
+      (appearancePreference_ == 0 && palette().color(QPalette::Window).lightness() < 128);
+  QPixmap icon(":/icons/tray.png");
+  if (icon.isNull())
+    return;
+  QPainter painter(&icon);
+  painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+  painter.fillRect(icon.rect(), dark ? Qt::white : Qt::black);
+  painter.end();
+  tray_->setIcon(QIcon(icon));
+}
+void MainWindow::changeEvent(QEvent *event) {
+  QMainWindow::changeEvent(event);
+  if (event->type() == QEvent::PaletteChange || event->type() == QEvent::ApplicationPaletteChange)
+    updateTrayIcon();
 }
 void MainWindow::closeEvent(QCloseEvent *event) {
   if (usableTray()) {

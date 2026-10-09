@@ -146,6 +146,62 @@ std::optional<QStringList> desktopArguments(const QByteArray &data) {
 class DesktopTests : public QObject {
   Q_OBJECT
 private slots:
+  void trayFollowsDesktopAppearance() {
+    QTemporaryDir dir;
+    QSettings settings(dir.filePath("settings.ini"), QSettings::IniFormat);
+    FakeMonitor monitor;
+    FakeNotifications alerts;
+    FakeAutostart startup;
+    AppModel model(&monitor, &alerts, &startup, &settings);
+    MainWindow window(&model, false);
+    auto *tray = window.findChild<QSystemTrayIcon *>();
+    QVERIFY(tray);
+    const QImage original(":/icons/tray.png");
+    QVERIFY(!original.isNull());
+    auto appearance = [&](uint scheme, bool nested = false) {
+      QVariant value = scheme;
+      if (nested)
+        value = QVariant::fromValue(QDBusVariant(value));
+      QVERIFY(QMetaObject::invokeMethod(&window, "appearanceChanged", Qt::DirectConnection,
+                                        Q_ARG(QString, "org.freedesktop.appearance"),
+                                        Q_ARG(QString, "color-scheme"),
+                                        Q_ARG(QDBusVariant, QDBusVariant(value))));
+    };
+    auto verify = [&](QColor color) {
+      const auto image = tray->icon().pixmap(original.size()).toImage();
+      QCOMPARE(image.size(), original.size());
+      int opaque = 0;
+      for (int y = 0; y < original.height(); ++y)
+        for (int x = 0; x < original.width(); ++x) {
+          const auto expected = original.pixelColor(x, y);
+          const auto actual = image.pixelColor(x, y);
+          QCOMPARE(actual.alpha(), expected.alpha());
+          if (expected.alpha() == 255) {
+            ++opaque;
+            QCOMPARE(actual, color);
+          }
+        }
+      QVERIFY(opaque > 0);
+    };
+    appearance(1, true);
+    verify(Qt::white);
+    appearance(2);
+    verify(Qt::black);
+    QPalette dark = window.palette();
+    dark.setColor(QPalette::Window, QColor("#202020"));
+    window.setPalette(dark);
+    verify(Qt::black); // Explicit desktop preference takes precedence over the app palette.
+    appearance(0);
+    verify(Qt::white);
+    auto light = dark;
+    light.setColor(QPalette::Window, Qt::white);
+    window.setPalette(light);
+    verify(Qt::black);
+    appearance(1);
+    verify(Qt::white);
+    appearance(99);
+    verify(Qt::black); // Unknown portal values mean no preference.
+  }
   void batchPrivacyPreferences() {
     QTemporaryDir dir;
     QSettings settings(dir.filePath("settings.ini"), QSettings::IniFormat);

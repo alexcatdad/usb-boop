@@ -1,5 +1,6 @@
 #pragma once
 #include "app.h"
+#include <QDBusVariant>
 #include <QMainWindow>
 #include <QSystemTrayIcon>
 class QVBoxLayout;
@@ -16,6 +17,10 @@ public:
 
 protected:
   void closeEvent(QCloseEvent *event) override;
+  void changeEvent(QEvent *event) override;
+
+private slots:
+  void appearanceChanged(const QString &group, const QString &key, const QDBusVariant &value);
 
 private:
   AppModel *model_;
@@ -23,6 +28,10 @@ private:
   QLabel *status_;
   QVBoxLayout *content_;
   QDialog *settings_ = nullptr;
+  uint appearancePreference_ = 0;
+  quint64 appearanceRevision_ = 0;
+  void readAppearance();
+  void updateTrayIcon();
   void render();
 };
 } // namespace boop

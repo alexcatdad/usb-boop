@@ -43,3 +43,10 @@ Record commands, results and remaining environmental limitations here.
   denied-access retries, notification delivery recovery and platform delivery gates.
 - Final release-verifier review requires exact version equality, rejecting a
   package whose version merely contains the expected version as a substring.
+- Desktop follow-up: launched the app on this machine's KDE/Wayland session and
+  confirmed its StatusNotifierItem registration. The desktop portal reports dark
+  mode; after the theme-aware tray fix, the registered pixmap's 167 opaque artwork
+  pixels are white. Regression coverage checks dark/light portal changes, nested
+  settings replies, palette fallback, unknown preferences and alpha preservation.
+  This evidence validates KDE tray registration and exported pixels; physical
+  hotplug/resume, GNOME and physical ARM64 validation remain unavailable.
