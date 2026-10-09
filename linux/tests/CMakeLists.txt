@@ -1,0 +1,7 @@
+include(backend.cmake)
+include(desktop.cmake)
+add_executable(cli_test cli_test.cpp)
+target_link_libraries(cli_test PRIVATE Qt6::Core Qt6::Test)
+target_compile_definitions(cli_test PRIVATE USB_BOOP_BINARY="$<TARGET_FILE:usb-boop>")
+add_dependencies(cli_test usb-boop)
+add_test(NAME cli COMMAND cli_test)

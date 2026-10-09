@@ -2,7 +2,7 @@
 
 ## Release ownership
 
-Release packages are built and signed on Alex's Mac. The Developer ID private key
+macOS release packages are built and signed on Alex's Mac. The Developer ID private key
 stays in the macOS Keychain; GitHub Actions receives neither that key nor Apple
 notarization credentials. Notarization still submits the signed package to Apple.
 
@@ -38,7 +38,7 @@ asset, checksum, or tag. Record the packaging source and separate DMG notarizati
 receipt; run release verification after adding the files. This lets us offer a
 DMG for `2026.09.17.4` without rebuilding or re-signing its already approved app.
 
-Each stable release contains:
+Each release offering macOS contains:
 
 - `usb-boop-macos-arm64.zip`, containing `usb-boop.app` for Apple Silicon;
 - `usb-boop-macos-arm64.sha256`, containing the final archive's checksum.
@@ -134,10 +134,53 @@ Gatekeeper evaluates the Developer ID signature and notarization ticket.
 CI regenerates the cask, runs `brew style --cask`, and loads it with
 `HOMEBREW_DEVELOPER=1 brew info --cask` to catch deprecated DSL behavior.
 
+Linux is delivered separately through `Formula/usb-boop.rb`, generated with
+`scripts/update_homebrew_tap.sh --linux`. The formula builds the separate Qt app
+from an immutable source-commit archive with a verified SHA-256. It supports
+x86_64 and ARM64 and does not change the Mac cask. The initial Linux formula is
+an explicitly unreleased `0.0.0-dev` preview; stable release delivery replaces it
+with the release CalVer and that tag's resolved source commit.
+
+Tap CI installs and tests the Linux formula on both native architectures. Mac
+CI checks the cask and its signed installation. Both definitions have the same
+name, so use explicit `--formula` or `--cask` installation commands.
+
 ```sh
 brew tap alexcatdad/tap
 brew install --cask alexcatdad/tap/usb-boop
+# Linux:
+brew install --formula alexcatdad/tap/usb-boop
 ```
+
+## Linux package preparation
+
+The manual Linux Packages workflow accepts an immutable reviewed source commit
+and a CalVer version. It builds native x86_64 and ARM64 packages; GitHub workflow
+artifacts contain DEB/RPM downloads and their SHA-256 sidecars. It does not publish
+a release. Local preparation uses:
+
+```sh
+./scripts/build_linux_packages.sh build/linux 2026.01.01.0 DEB
+./scripts/build_linux_packages.sh build/fedora 2026.01.01.0 RPM
+```
+
+The example version is for testing only. Use the actual selected release version
+for release artifacts. Build packages in their matching distribution environment
+so dependency metadata describes the installed runtime libraries. Do not ship
+a Homebrew-linked local binary as a distribution package.
+
+A Linux stable release offers `usb-boop-linux-x86_64.deb`,
+`usb-boop-linux-x86_64.rpm`, `usb-boop-linux-aarch64.deb` and
+`usb-boop-linux-aarch64.rpm`, each with a `.sha256` sidecar. Release verification
+checks their checksums and installs them on the corresponding native architecture
+and distribution before formula delivery.
+
+Mac-only historical releases continue to update only the cask. Linux-only releases
+leave the Mac cask untouched. When both platforms are offered, each entry is
+delivered only after its own verification passes; a failed package on one
+platform does not block the verified entry for the other. Each entry rejects version
+downgrades and replacement of a released version's checksum. Mac signing keys,
+notarization credentials and local signing remain unchanged.
 
 ## Security checks and provenance
 

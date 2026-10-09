@@ -20,15 +20,18 @@ concurrency:
 
 jobs:
   verify-release:
-    name: Verify locally signed release
-    runs-on: macos-26
+    name: Validate release metadata and source
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: read
     outputs:
       tag: ${{ steps.release.outputs.tag }}
       version: ${{ steps.release.outputs.version }}
-      archive: ${{ steps.verify.outputs.archive }}
+      mac: ${{ steps.release.outputs.mac }}
+      linux: ${{ steps.release.outputs.linux }}
+      source: ${{ steps.release.outputs.source }}
+      source_url: ${{ steps.release.outputs.source_url }}
 
     steps:
       - name: Check out trusted verification scripts
@@ -62,14 +65,39 @@ jobs:
           {
             echo "tag=$RELEASE_TAG"
             echo "version=${RELEASE_TAG#v}"
+            echo "mac=$(jq -r 'any(.assets[]; .name == "usb-boop-macos-arm64.zip")' release.json)"
+            echo "linux=$(jq -r 'any(.assets[]; .name | startswith("usb-boop-linux-"))' release.json)"
           } >> "$GITHUB_OUTPUT"
+
+          if jq -e 'any(.assets[]; .name | startswith("usb-boop-linux-"))' release.json >/dev/null; then
+            source_commit=$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")
+            source_url="https://github.com/$GITHUB_REPOSITORY/archive/$source_commit.tar.gz"
+            curl --fail --location --output source.tar.gz "$source_url"
+            echo "source_url=$source_url" >> "$GITHUB_OUTPUT"
+            echo "source=$(shasum -a 256 source.tar.gz | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          fi
+
+  verify-mac:
+    name: Verify locally signed Mac artifact
+    needs: verify-release
+    if: needs.verify-release.outputs.mac == 'true'
+    runs-on: macos-26
+    permissions:
+      contents: read
+    outputs:
+      archive: ${{ steps.verify.outputs.archive }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
 
       - name: Download and verify published artifact
         id: verify
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.release.outputs.tag }}
-          VERSION: ${{ steps.release.outputs.version }}
+          TAG: ${{ needs.verify-release.outputs.tag }}
+          VERSION: ${{ needs.verify-release.outputs.version }}
         run: |
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
             --pattern usb-boop-macos-arm64.zip \
@@ -82,6 +110,7 @@ jobs:
           ./scripts/verify_release_artifact.sh assets/usb-boop-macos-arm64.zip "$VERSION"
           # ZIP remains the Homebrew artifact. When a DMG is offered too,
           # independently check its outer ticket and the identical app inside.
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" > release.json
           if jq -e 'any(.assets[]; .name == "usb-boop-macos-arm64.dmg" or .name == "usb-boop-macos-arm64.dmg.sha256")' release.json > /dev/null; then
             gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
               --pattern usb-boop-macos-arm64.dmg \
@@ -93,21 +122,67 @@ jobs:
           fi
           echo "archive=$(shasum -a 256 assets/usb-boop-macos-arm64.zip | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
+  verify-linux:
+    name: Verify Linux release (${{ matrix.arch }})
+    needs: verify-release
+    if: needs.verify-release.outputs.linux == 'true'
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Download and verify Linux packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.verify-release.outputs.tag }}
+          VERSION: ${{ needs.verify-release.outputs.version }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern "usb-boop-linux-$ARCH.*" --dir assets
+          for ext in deb rpm; do
+            checksum="assets/usb-boop-linux-$ARCH.$ext.sha256"
+            [[ $(wc -l < "$checksum") == 1 ]]
+            LC_ALL=C grep -Eq "^[0-9a-f]{64}  usb-boop-linux-$ARCH\\.$ext$" "$checksum"
+            (cd assets && sha256sum -c "$(basename "$checksum")")
+          done
+          docker run --rm -e VERSION -e ARCH -v "$PWD/assets:/assets:ro" -v "$PWD/scripts:/scripts:ro" ubuntu:24.04 bash -eu -c '
+            apt-get update
+            DEBIAN_FRONTEND=noninteractive apt-get install -y "/assets/usb-boop-linux-$ARCH.deb" python3 dbus-daemon
+            dbus-run-session -- /scripts/verify_linux_install.sh "$VERSION"
+          '
+
+          docker run --rm -e VERSION -e ARCH -v "$PWD/assets:/assets:ro" -v "$PWD/scripts:/scripts:ro" fedora:44 bash -eu -c '
+            dnf install -y "/assets/usb-boop-linux-$ARCH.rpm" python3 dbus-daemon
+            /scripts/verify_linux_install.sh "$VERSION"
+          '
+
   update-homebrew:
     name: Update Homebrew Tap
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
-    needs: verify-release
+    needs: [verify-release, verify-mac, verify-linux]
+    if: always() && needs.verify-release.result == 'success' && (needs.verify-mac.result == 'success' || needs.verify-linux.result == 'success')
     environment: action-runners
 
     steps:
       - name: Download the verified release archive
+        if: needs.verify-mac.result == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.verify-release.outputs.tag }}
-          VERIFIED_SHA: ${{ needs.verify-release.outputs.archive }}
+          VERIFIED_SHA: ${{ needs.verify-mac.outputs.archive }}
         run: |
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
             --pattern usb-boop-macos-arm64.zip --dir assets
@@ -147,27 +222,51 @@ jobs:
 
       - name: Reject tap version downgrade
         env:
+          MAC: ${{ needs.verify-mac.result == 'success' }}
+          LINUX: ${{ needs.verify-linux.result == 'success' }}
+          MAC_SHA: ${{ needs.verify-mac.outputs.archive }}
+          LINUX_SHA: ${{ needs.verify-release.outputs.source }}
           VERSION: ${{ needs.verify-release.outputs.version }}
         run: |
           [[ "$VERSION" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+$ ]]
-          if [[ -f homebrew-tap/Casks/usb-boop.rb ]]; then
-            current=$(sed -n 's/^  version "\([^"]*\)"$/\1/p' homebrew-tap/Casks/usb-boop.rb)
-            [[ "$current" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+$ ]]
+          for entry in Casks Formula; do
+            if [[ "$entry" == Casks && "$MAC" != true ]] || [[ "$entry" == Formula && "$LINUX" != true ]]; then continue; fi
+          if [[ -f "homebrew-tap/$entry/usb-boop.rb" ]]; then
+            current=$(sed -n 's/^  version "\([^"]*\)"$/\1/p' "homebrew-tap/$entry/usb-boop.rb")
+            [[ "$current" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+$ ]] || [[ "$entry" == Formula && "$current" == 0.0.0-dev ]]
+            if [[ "$current" == "$VERSION" ]]; then
+              existing_sha=$(sed -n 's/^  sha256 "\([^"]*\)"$/\1/p' "homebrew-tap/$entry/usb-boop.rb")
+              expected_sha=$MAC_SHA
+              [[ "$entry" != Formula ]] || expected_sha=$LINUX_SHA
+              [[ "$existing_sha" == "$expected_sha" ]] || { echo "Refusing to replace a published version checksum." >&2; exit 1; }
+            fi
             newest=$(printf '%s\n%s\n' "$current" "$VERSION" | sort -V | tail -n 1)
             [[ "$newest" == "$VERSION" ]] || {
-              echo "Refusing to downgrade the Homebrew cask." >&2
+              echo "Refusing to downgrade the Homebrew entry." >&2
               exit 1
             }
           fi
+          done
 
       - name: Update cask
+        if: needs.verify-mac.result == 'success'
         env:
           VERSION: ${{ needs.verify-release.outputs.version }}
-          SHA_ARCHIVE: ${{ needs.verify-release.outputs.archive }}
+          SHA_ARCHIVE: ${{ needs.verify-mac.outputs.archive }}
         run: |
           ./scripts/update_homebrew_tap.sh \
             homebrew-tap "$VERSION" "$SHA_ARCHIVE" \
             "https://github.com/$GITHUB_REPOSITORY/releases/download/v${VERSION}/usb-boop-macos-arm64.zip"
+
+      - name: Update Linux formula
+        if: needs.verify-linux.result == 'success'
+        env:
+          VERSION: ${{ needs.verify-release.outputs.version }}
+          SOURCE_SHA: ${{ needs.verify-release.outputs.source }}
+          SOURCE_URL: ${{ needs.verify-release.outputs.source_url }}
+        run: |
+          ./scripts/update_homebrew_tap.sh --linux homebrew-tap "$VERSION" "$SOURCE_SHA" \
+            "$SOURCE_URL"
 
       - name: Update README
         env:
@@ -236,7 +335,8 @@ jobs:
           }
           git config user.name "${APP_SLUG}[bot]"
           git config user.email "${USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
-          git add Casks/usb-boop.rb README.md
+          git add Casks README.md
+          [[ ! -d Formula ]] || git add Formula
           git diff --staged --quiet || {
             git commit -m "chore: update usb-boop to ${VERSION}"
             git push

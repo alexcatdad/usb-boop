@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=usb-boop
+Comment=Show negotiated USB connection speeds
+Exec=usb-boop
+Icon=usb-boop
+Terminal=false
+Categories=Utility;System;
+StartupNotify=true

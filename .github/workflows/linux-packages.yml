@@ -1,0 +1,72 @@
+name: Prepare Linux packages
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Reviewed immutable 40-character commit SHA reachable from main
+        required: true
+        type: string
+      version:
+        description: Package version YYYY.MM.DD.N
+        required: true
+        type: string
+permissions: {}
+jobs:
+  packages:
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate inputs and select source
+        env:
+          COMMIT: ${{ inputs.commit }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          [[ "$COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$VERSION" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+$ ]]
+          git merge-base --is-ancestor "$COMMIT" origin/main
+          git checkout --detach "$COMMIT"
+      - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build g++ qt6-base-dev qt6-wayland-dev libudev-dev pkg-config dpkg-dev file
+      - name: Prepare DEB and RPM
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          ./scripts/build_linux_packages.sh build/linux "$VERSION" DEB
+          docker run --rm -e VERSION -v "$PWD/build/linux:/packages:ro" -v "$PWD/scripts:/scripts:ro" ubuntu:24.04 bash -eu -c '
+            apt-get update
+            DEBIAN_FRONTEND=noninteractive apt-get install -y /packages/usb-boop-linux-*.deb python3 dbus-daemon
+            dbus-run-session -- /scripts/verify_linux_install.sh "$VERSION"
+          '
+
+          mkdir -p build/rpm
+          docker run --rm -e VERSION -v "$PWD:/src:ro" -v "$PWD/build/rpm:/output" fedora:44 bash -eu -c '
+            dnf install -y gcc-c++ cmake ninja-build qt6-qtbase-devel qt6-qtwayland-devel systemd-devel pkgconf-pkg-config rpm-build python3 dbus-daemon
+            cp -a /src /work
+            cd /work
+            useradd -m builder
+            chown -R builder:builder /work
+            runuser -u builder -- ./scripts/build_linux_packages.sh build/fedora "$VERSION" RPM
+            cp build/fedora/*.rpm /output/
+          '
+          docker run --rm -e VERSION -v "$PWD/build/rpm:/packages:ro" -v "$PWD/scripts:/scripts:ro" fedora:44 bash -eu -c '
+            dnf install -y /packages/usb-boop-linux-*.rpm python3 dbus-daemon
+            /scripts/verify_linux_install.sh "$VERSION"
+          '
+          for package in build/linux/*.deb build/rpm/*.rpm; do
+            (cd "$(dirname "$package")" && sha256sum "$(basename "$package")" > "$(basename "$package").sha256")
+          done
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: linux-packages-${{ matrix.runner }}
+          path: |
+            build/linux/*.deb*
+            build/rpm/*.rpm*
+          if-no-files-found: error
