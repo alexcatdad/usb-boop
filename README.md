@@ -36,10 +36,9 @@ for the canonical artwork and future design references.
 brew install --cask alexcatdad/tap/usb-boop
 ```
 
-Or download the [DMG installer](https://github.com/alexcatdad/usb-boop/releases/latest/download/usb-boop-macos-arm64.dmg),
-open it, and drag **usb-boop** into **Applications**. Then open the app from
-Applications and eject the installer. A ZIP download remains available in
-[Releases](https://github.com/alexcatdad/usb-boop/releases/latest).
+Or download the ZIP from [Releases](https://github.com/alexcatdad/usb-boop/releases/latest),
+unzip it and drag **usb-boop** into **Applications**. Then open the app from
+Applications.
 
 Starting with `2026.09.17.4`, releases are signed with Developer ID and notarized
 by Apple. Open the app normally; no quarantine removal is needed.
@@ -47,16 +46,15 @@ by Apple. Open the app normally; no quarantine removal is needed.
 ### Verifying a download
 
 macOS verifies the Developer ID signature and notarization when opening the app.
-Each download also has a checksum. Download the DMG and its `.dmg.sha256` file into
-the same directory, then check:
+Each release also has a `SHA256SUMS` file. Download it next to the ZIP and check:
 
 ```sh
-shasum -a 256 -c usb-boop-macos-arm64.dmg.sha256
+shasum -a 256 -c SHA256SUMS --ignore-missing
 ```
 
 Signing happens locally on the maintainer's Mac; private keys never enter
 GitHub Actions. These local packages do not carry a GitHub build-provenance
-attestation. See the [release runbook](docs/development-runbook.md#local-signed-release).
+attestation. See the [release guide](docs/release-automation.md).
 
 ## What it does
 
@@ -142,15 +140,22 @@ Tests/
 
 ## Release model
 
-Releases follow [CalVer](https://calver.org/) (`YYYY.MM.DD.N`). After a reviewed
-commit passes CI:
+Versions are `YYYY.M.N` (UTC year and month without leading zeros, then a
+per-month counter from 1; tag `vYYYY.M.N`). Earlier `YYYY.MM.DD.N` tags stay as
+history. Releases are made only by an explicit local run on the maintainer's
+Mac, using [release-tools](https://github.com/alexcatdad/release-tools) through
+Go Task:
 
-1. The maintainer builds and signs the app locally, then notarizes it with Apple.
-2. The verified package and checksum are published in a new GitHub Release.
-3. GitHub independently verifies the download before updating the Homebrew cask
-   in [`alexcatdad/homebrew-tap`](https://github.com/alexcatdad/homebrew-tap).
+```sh
+task release:check    # read-only preflight: prints the commit and next version
+task release          # build, sign, notarize, publish, update the Homebrew tap
+task release:resume   # continue an interrupted release with the same version
+```
 
-Merging to `main` runs checks but does not publish a binary.
+A local release-tools config (signing identity, notary profile) is required; it
+lives outside the checkout. GitHub Actions only validates: merging to `main`
+runs checks but never builds, signs or publishes anything, and CI never
+releases. See the [release guide](docs/release-automation.md).
 
 ## License
 

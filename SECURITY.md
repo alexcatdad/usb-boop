@@ -11,7 +11,7 @@ Expect an initial response within seven days.
 ## Supported Versions
 
 Only the latest release is supported. Versions follow CalVer
-(`YYYY.MM.DD.N`); fixes ship as a new release rather than as patches to an
+(`YYYY.M.N`); fixes ship as a new release rather than as patches to an
 older one.
 
 ## What This App Does
