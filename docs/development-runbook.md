@@ -349,8 +349,9 @@ running `~/Applications/usb-boop-dev.app` was unaffected. Alex was informed.
 
 ## DMG installer
 
-Status: the DMG is not part of the automated `task release` (the Homebrew cask
-has one download URL, and the tap updater rejects unused assets). The scripts
+Status: the DMG is not part of the automated `task release` (the app inside
+must be notarized before the DMG is built, which the release order does not
+provide). The scripts
 and notes below describe the manual procedure and use the retired
 `YYYY.MM.DD.N` naming and `release.yml`; adapt them before use.
 
