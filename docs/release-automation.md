@@ -43,15 +43,14 @@ requires a new version.
 
 Each release contains:
 
-- `usb-boop-<version>-macos-arm64.zip`, containing `usb-boop.app` for Apple
+- `usb-boop-macos-arm64.zip`, containing `usb-boop.app` for Apple
   Silicon (macOS 14 or later), Developer ID signed, notarized and stapled;
 - `SHA256SUMS` and `usb-boop-<version>.manifest.json`, written by reltool.
 
 The DMG installer (`scripts/build_release_dmg.sh`) is not part of the automated
-release yet: the Homebrew cask carries a single download URL and the tap updater
-rejects an asset the cask does not use. Its scripts are kept; see the
-[DMG runbook](development-runbook.md#dmg-installer) and the open decision in
-the migration PR.
+release yet: its contained app must be notarized before the DMG is built, which
+the build-then-notarize order of `release:prepare` does not provide. The scripts
+are kept; see the [DMG runbook](development-runbook.md#dmg-installer).
 
 The checksum is calculated after notarization and stapling. Install checks for
 the produced zip: `validate:macos-arm64` verifies identity, version,
@@ -68,7 +67,7 @@ published app must retain the App Sandbox and USB entitlement and use the
 release bundle identifier `com.alexcatdad.usb-boop`.
 
 ```sh
-./scripts/verify_release_artifact.sh usb-boop-2026.10.1-macos-arm64.zip 2026.10.1
+./scripts/verify_release_artifact.sh usb-boop-macos-arm64.zip 2026.10.1
 ```
 
 It verifies the packaged app's version and bundle identity, Developer ID team

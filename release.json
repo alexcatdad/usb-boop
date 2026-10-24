@@ -13,7 +13,7 @@
       "build_task": "build:macos-arm64",
       "validate_task": "validate:macos-arm64",
       "artifacts": [
-        { "name": "usb-boop-{version}-macos-arm64.zip", "kind": "zip" }
+        { "name": "usb-boop-macos-arm64.zip", "kind": "zip" }
       ]
     }
   ],

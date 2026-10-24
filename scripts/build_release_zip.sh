@@ -35,7 +35,7 @@ if [[ -z "${unsigned}" ]]; then
 fi
 
 derived_data_path="${DERIVED_DATA_PATH:-${TMPDIR:-$(pwd)/.build}/DerivedData}"
-artifact_name="usb-boop-${version}-macos-arm64.zip"
+artifact_name="usb-boop-macos-arm64.zip"
 artifact_path="${output_dir}/${artifact_name}"
 
 rm -rf "${derived_data_path}"
