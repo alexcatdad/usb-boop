@@ -1,0 +1,70 @@
+version: "3"
+
+# Releases are explicit and local: `task release:check`, `task release`,
+# `task release:resume`. CI never builds, signs, publishes or updates the tap.
+# See docs/release-automation.md.
+
+vars:
+  RELTOOL_TAG: v0.1.0
+  RELTOOL_COMMIT: 47b12842142fbd2b8443479e85d2b457c37b47aa # commit of RELTOOL_TAG
+  RELTOOL_SRC: ../release-tools
+  RELTOOL:
+    sh: echo "${XDG_CACHE_HOME:-$HOME/.cache}/release-tools/{{.RELTOOL_COMMIT}}/reltool"
+
+tasks:
+  # --- app-owned recipes ---
+  check:
+    desc: Lint, generate the project and run the unit tests (what CI runs).
+    cmds:
+      - swiftlint --strict
+      - xcodegen generate
+      - >-
+        xcodebuild
+        -project usb-boop.xcodeproj
+        -scheme usb-boop
+        -destination 'platform=macOS,arch=arm64'
+        CODE_SIGNING_ALLOWED=NO
+        test
+
+  build:macos-arm64:
+    desc: Build, sign and zip the app into $RELEASE_OUT (called by reltool).
+    cmds:
+      - ./scripts/build_release_zip.sh
+
+  validate:macos-arm64:
+    desc: Verify the signed zip before notarization (called by reltool).
+    cmds:
+      - VERIFY_BEFORE_NOTARIZATION=1 ./scripts/verify_release_artifact.sh "$RELEASE_OUT/usb-boop-$RELEASE_VERSION-macos-arm64.zip" "$RELEASE_VERSION"
+
+  # --- release-tools consumer snippet ---
+  reltool:install:
+    internal: true
+    status:
+      - test -x "{{.RELTOOL}}"
+    cmds:
+      - git -C "{{.RELTOOL_SRC}}" show "{{.RELTOOL_COMMIT}}:scripts/install-reltool.sh" | sh -s -- "{{.RELTOOL_SRC}}" "{{.RELTOOL_TAG}}" "{{.RELTOOL_COMMIT}}"
+
+  release:check:
+    deps: [reltool:install]
+    cmds:
+      - '"{{.RELTOOL}}" release check --task-exe "{{.TASK_EXE}}" {{.CLI_ARGS}}'
+
+  release:prepare:
+    deps: [reltool:install]
+    cmds:
+      - '"{{.RELTOOL}}" release prepare --task-exe "{{.TASK_EXE}}" {{.CLI_ARGS}}'
+
+  release:
+    deps: [reltool:install]
+    cmds:
+      - '"{{.RELTOOL}}" release run --task-exe "{{.TASK_EXE}}" {{.CLI_ARGS}}'
+
+  release:resume:
+    deps: [reltool:install]
+    cmds:
+      - '"{{.RELTOOL}}" release resume --task-exe "{{.TASK_EXE}}" {{.CLI_ARGS}}'
+
+  release:abandon:
+    deps: [reltool:install]
+    cmds:
+      - '"{{.RELTOOL}}" release abandon {{.CLI_ARGS}}'
