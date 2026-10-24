@@ -4,8 +4,8 @@
 # Never launch the app or enumerate, mount, or detach USB/media devices.
 set -euo pipefail
 
-if [[ $# -lt 2 || $# -gt 3 || ! "$2" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+$ ]]; then
-  echo "usage: $0 <release.dmg> <YYYY.MM.DD.N> [reference.zip]" >&2
+if [[ $# -lt 2 || $# -gt 3 || ! "$2" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]+$ ]]; then
+  echo "usage: $0 <release.dmg> <YYYY.M.N> [reference.zip]" >&2
   exit 1
 fi
 

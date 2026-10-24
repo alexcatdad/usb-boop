@@ -4,7 +4,7 @@
 # written directly into the image; no Finder automation or preferences change.
 set -euo pipefail
 if [[ $# -ne 3 ]]; then
-  echo "usage: $0 <notarized-release.zip> <YYYY.MM.DD.N> <output-dir>" >&2
+  echo "usage: $0 <notarized-release.zip> <YYYY.M.N> <output-dir>" >&2
   exit 1
 fi
 archive="$1"

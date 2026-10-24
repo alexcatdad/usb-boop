@@ -4,8 +4,8 @@
 # are needed, and neither the application nor any device is opened.
 set -euo pipefail
 
-if [[ $# -ne 2 || ! "$2" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+$ ]]; then
-  echo "usage: $0 <release.zip> <YYYY.MM.DD.N>" >&2
+if [[ $# -ne 2 || ! "$2" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]+$ ]]; then
+  echo "usage: $0 <release.zip> <YYYY.M.N>" >&2
   exit 1
 fi
 
@@ -54,6 +54,12 @@ plutil -convert json -o - "${verification_dir}/entitlements.plist" | jq -e '
   . == {"com.apple.security.app-sandbox": true, "com.apple.security.device.usb": true}
 ' > /dev/null
 
+# VERIFY_BEFORE_NOTARIZATION=1 is for the build-time `validate:macos-arm64`
+# task, which runs before reltool notarizes and staples the archive.
+if [[ -n "${VERIFY_BEFORE_NOTARIZATION:-}" ]]; then
+  echo "Verified Developer ID, Hardened Runtime, sandbox, USB entitlement (before notarization): ${version}"
+  exit 0
+fi
 xcrun stapler validate "${app}"
 spctl --assess --type execute --verbose=2 "${app}"
 echo "Verified Developer ID, Hardened Runtime, sandbox, USB entitlement, notarization, and Gatekeeper: ${version}"
