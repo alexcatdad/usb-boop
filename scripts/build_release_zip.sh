@@ -6,10 +6,11 @@
 #
 # Required environment (set by reltool):
 #   RELEASE_OUT              output directory for the final artifact
-#   MACOS_SHORT_VERSION      CFBundleShortVersionString (YYYY.M.N)
-#   MACOS_BUNDLE_VERSION     CFBundleVersion (YYYY.M.N)
+#   MACOS_SHORT_VERSION      CFBundleShortVersionString (YYYY.MMDD.N)
+#   MACOS_BUNDLE_VERSION     CFBundleVersion (YYYY.MMDD.N)
 #   MACOS_SIGNING_IDENTITY   Developer ID Application identity (signed targets)
 #   MACOS_ENTITLEMENTS       absolute path of the entitlements file
+#   RELEASE_VERSION          optional; when set, both bundle versions must match it
 # Set USB_BOOP_UNSIGNED_BUILD=1 to package without signing; this is only for
 # proving the build and cannot pass a signed target's signature verification.
 set -euo pipefail
@@ -17,11 +18,22 @@ set -euo pipefail
 : "${RELEASE_OUT:?RELEASE_OUT is required}"
 : "${MACOS_SHORT_VERSION:?MACOS_SHORT_VERSION is required}"
 : "${MACOS_BUNDLE_VERSION:?MACOS_BUNDLE_VERSION is required}"
-version="${MACOS_SHORT_VERSION}"
 output_dir="${RELEASE_OUT}"
-if [[ ! "${version}" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]+$ ]]; then
-  echo "expected a CalVer version: YYYY.M.N" >&2
-  exit 1
+# shellcheck source=scripts/release_version.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/release_version.sh"
+for apple_version in "${MACOS_SHORT_VERSION}" "${MACOS_BUNDLE_VERSION}"; do
+  if ! is_apple_version "${apple_version}"; then
+    echo "expected an Apple bundle version (YYYY.MMDD.N), got ${apple_version}" >&2
+    exit 1
+  fi
+done
+if [[ -n "${RELEASE_VERSION:-}" ]]; then
+  expected="$(apple_version_for "${RELEASE_VERSION}")" \
+    || { echo "expected a CalVer release version (YYYY.MM.DD.N), got ${RELEASE_VERSION}" >&2; exit 1; }
+  if [[ "${MACOS_SHORT_VERSION}" != "${expected}" || "${MACOS_BUNDLE_VERSION}" != "${expected}" ]]; then
+    echo "bundle versions must be ${expected} for release ${RELEASE_VERSION}" >&2
+    exit 1
+  fi
 fi
 unsigned="${USB_BOOP_UNSIGNED_BUILD:-}"
 sign_identity="${MACOS_SIGNING_IDENTITY:-}"

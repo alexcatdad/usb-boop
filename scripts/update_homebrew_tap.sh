@@ -2,8 +2,10 @@
 
 set -euo pipefail
 
-if [[ $# -lt 4 ]]; then
-  echo "usage: $0 <tap-dir> <version> <sha256> <release-url>" >&2
+# shellcheck source=scripts/release_version.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/release_version.sh"
+if [[ $# -lt 4 ]] || ! apple_version_for "$2" > /dev/null; then
+  echo "usage: $0 <tap-dir> <YYYY.MM.DD.N> <sha256> <release-url>" >&2
   exit 1
 fi
 

@@ -30,12 +30,15 @@ accessibility, or login testing.
 
 ## Versions and release assets
 
-Versions use `YYYY.M.N`: UTC year and month without leading zeros and a
-per-month counter starting at 1; tags are `vYYYY.M.N`. reltool allocates the
-version. It is passed to `scripts/build_release_zip.sh` as `MACOS_SHORT_VERSION`
-(`CFBundleShortVersionString`) and `MACOS_BUNDLE_VERSION` (`CFBundleVersion`),
-both the same value. Numeric comparison keeps `2026.10.1` above the earlier
-`2026.9.17.5`; old `vYYYY.MM.DD.N` tags are history and are never retagged.
+Versions use daily CalVer `YYYY.MM.DD.N`: the UTC date and a per-day counter
+starting at 1; tags are `vYYYY.MM.DD.N`. reltool allocates the version and passes
+it as `RELEASE_VERSION`, with the Apple bundle version `YYYY.MMDD.N` (for example
+`2026.1105.1` for `2026.11.05.1`) as `MACOS_SHORT_VERSION`
+(`CFBundleShortVersionString`) and `MACOS_BUNDLE_VERSION` (`CFBundleVersion`).
+`scripts/build_release_zip.sh` builds with those two values, and
+`scripts/verify_release_artifact.sh` checks both against the release version
+(`scripts/release_version.sh` holds the mapping). Older `YYYY.M.N` versions map to
+themselves; the next daily version sorts above the last tag, `v2026.09.17.5`.
 
 Published versions are append-only: do not move a published tag or replace an
 asset. A changed signature, stapled ticket, binary, or replacement packaging

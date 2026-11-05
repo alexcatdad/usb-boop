@@ -4,13 +4,18 @@
 # are needed, and neither the application nor any device is opened.
 set -euo pipefail
 
-if [[ $# -ne 2 || ! "$2" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]+$ ]]; then
-  echo "usage: $0 <release.zip> <YYYY.M.N>" >&2
+# shellcheck source=scripts/release_version.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/release_version.sh"
+if [[ $# -ne 2 ]] || ! apple_version="$(apple_version_for "$2")"; then
+  echo "usage: $0 <release.zip> <YYYY.MM.DD.N>" >&2
   exit 1
 fi
 
 archive="$1"
 version="$2"
+# reltool passes the bundle versions it built with; otherwise derive them.
+short_version="${MACOS_SHORT_VERSION:-${apple_version}}"
+bundle_version="${MACOS_BUNDLE_VERSION:-${apple_version}}"
 verification_dir="$(mktemp -d)"
 trap 'rm -rf "${verification_dir}"' EXIT
 
@@ -39,7 +44,8 @@ ditto -x -k "${archive}" "${verification_dir}"
 app="${verification_dir}/usb-boop.app"
 plist="${app}/Contents/Info.plist"
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "${plist}")" == 'com.alexcatdad.usb-boop' ]]
-[[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${plist}")" == "${version}" ]]
+[[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${plist}")" == "${short_version}" ]]
+[[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "${plist}")" == "${bundle_version}" ]]
 [[ "$(lipo -archs "${app}/Contents/MacOS/usb-boop")" == 'arm64' ]]
 
 codesign --verify --deep --strict --all-architectures \

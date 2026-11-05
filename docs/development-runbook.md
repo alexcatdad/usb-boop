@@ -330,7 +330,7 @@ banner with the final icon remain manual acceptance follow-ups.
 
 Releases are made by `task release` from a clean reviewed commit; see
 [release-automation.md](release-automation.md). The earlier manual sequence
-(`next_calver.sh`, hand-run `notarytool`, `gh release create`) and the
+(hand-allocated versions, hand-run `notarytool`, `gh release create`) and the
 `release.yml` workflow were replaced by that task. Historical notes above
 refer to the retired process.
 
