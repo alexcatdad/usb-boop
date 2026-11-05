@@ -5,13 +5,13 @@
   "checks": ["check"],
   "targets": [
     {
-      "id": "macos-arm64",
+      "id": "darwin-arm64",
       "os": "darwin",
       "arch": "arm64",
       "min_os": "14.0",
       "runs": "local",
-      "build_task": "build:macos-arm64",
-      "validate_task": "validate:macos-arm64",
+      "build_task": "build:darwin-arm64",
+      "validate_task": "validate:darwin-arm64",
       "artifacts": [
         { "name": "usb-boop-macos-arm64.zip", "kind": "zip" }
       ]
@@ -20,7 +20,7 @@
   "migration": { "floor": "2026.9.17.5" },
   "signing": {
     "macos": {
-      "targets": ["macos-arm64"],
+      "targets": ["darwin-arm64"],
       "entitlements": "Sources/App/usb-boop.entitlements",
       "notarize": true,
       "staple": true

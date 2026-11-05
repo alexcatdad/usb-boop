@@ -10,9 +10,8 @@ Expect an initial response within seven days.
 
 ## Supported Versions
 
-Only the latest release is supported. Versions follow CalVer
-(`YYYY.M.N`); fixes ship as a new release rather than as patches to an
-older one.
+Only the latest release is supported. Versions are CalVer (`vYYYY.MM.DD.N`);
+fixes ship as a new release, never as a replacement of a published one.
 
 ## What This App Does
 
@@ -31,10 +30,10 @@ be treated as a security-relevant change.
 
 Starting with `2026.09.17.4`, releases are Developer ID signed locally and
 notarized by Apple. The private key and notarization credentials remain in the
-maintainer's local Keychain. GitHub Actions receives only public artifacts and
-verifies the expected team, bundle identity, version, Hardened Runtime,
-sandbox/USB entitlements, stapled ticket, and Gatekeeper acceptance before
-updating Homebrew. The cask does not remove quarantine.
+maintainer's local Keychain. GitHub Actions never builds, signs or publishes.
+The local release verifies the expected team, bundle identity, version, Hardened
+Runtime, sandbox/USB entitlements, stapled ticket, and Gatekeeper acceptance
+before publishing and updating Homebrew. The cask does not remove quarantine.
 
 These locally built packages do not claim GitHub build provenance. Signing
 establishes the publisher and detects changes to signed code; notarization is
@@ -51,7 +50,8 @@ the Developer ID signature or notarization.
 
 ## Automated Checks
 
-Every pull request runs zizmor, actionlint, shellcheck, and CodeQL; the same
-checks run weekly against `main`. All GitHub Actions are pinned to full commit
-SHAs and updated by Dependabot. See
+Every pull request runs a secret scan, dependency review, SwiftLint, a build,
+and CodeQL through `alexcatdad/ci-actions`; `main` also runs the full tests and
+`task security`, and CodeQL and the security checks rerun weekly. All GitHub
+Actions are pinned to full commit SHAs. See
 [docs/release-automation.md](docs/release-automation.md) for details.

@@ -54,7 +54,7 @@ plutil -convert json -o - "${verification_dir}/entitlements.plist" | jq -e '
   . == {"com.apple.security.app-sandbox": true, "com.apple.security.device.usb": true}
 ' > /dev/null
 
-# VERIFY_BEFORE_NOTARIZATION=1 is for the build-time `validate:macos-arm64`
+# VERIFY_BEFORE_NOTARIZATION=1 is for the build-time `validate:darwin-arm64`
 # task, which runs before reltool notarizes and staples the archive.
 if [[ -n "${VERIFY_BEFORE_NOTARIZATION:-}" ]]; then
   echo "Verified Developer ID, Hardened Runtime, sandbox, USB entitlement (before notarization): ${version}"

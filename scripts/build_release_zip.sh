@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Build, sign and package the Release app as a zip. Called by the
-# `build:macos-arm64` Go Task target; reltool provides the version and the
+# `build:darwin-arm64` Go Task target; reltool provides the version and the
 # output directory, and signs-verifies, notarizes and staples afterwards.
 #
 # Required environment (set by reltool):
