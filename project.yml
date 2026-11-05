@@ -4,6 +4,13 @@ options:
   minimumXcodeGenVersion: 2.45.0
   createIntermediateGroups: true
 
+packages:
+  # menubar-kit v2026.11.05.1. SwiftPM cannot resolve four-part CalVer tags, so
+  # the tag's commit is pinned by revision. Linked statically into the app only.
+  MenubarKit:
+    url: https://github.com/alexcatdad/menubar-kit.git
+    revision: 1e63329e0f4c42f0ed5dd4f629f7b7f0b0bac7f1
+
 settings:
   base:
     SWIFT_VERSION: 6.0
@@ -38,6 +45,7 @@ targets:
         buildPhase: resources
     dependencies:
       - target: USBBoopKit
+      - package: MenubarKit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.alexcatdad.usb-boop
@@ -49,6 +57,9 @@ targets:
         # embedded USBBoopKit.framework. See scripts/build_release_zip.sh.
         CODE_SIGN_ENTITLEMENTS: Sources/App/usb-boop.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Keep TrayIcon/USBBoopTrayIcon.png and @2x.png as separate files:
+        # MenubarKit's TrayIconLoader loads both and rejects a merged TIFF.
+        COMBINE_HIDPI_IMAGES: NO
         MARKETING_VERSION: 0.0.0-dev
         CURRENT_PROJECT_VERSION: 1
       configs:
@@ -81,6 +92,7 @@ targets:
           - USBBoopApp.swift
     dependencies:
       - target: USBBoopKit
+      - package: MenubarKit
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

@@ -6,12 +6,14 @@ repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 icon_source="$repo_dir/Design/nose-boop-source.png"
 menu_source="$repo_dir/Design/nose-boop-menu-source.png"
 icon_set="$repo_dir/Sources/App/Assets.xcassets/AppIcon.appiconset"
-menu_set="$repo_dir/Sources/App/Assets.xcassets/MenuBarIcon.imageset"
+# MenubarKit TrayIconLoader reads <base>.png (18 px) and <base>@2x.png (36 px)
+# loose from Contents/Resources, so these stay out of the asset catalog.
+tray_dir="$repo_dir/Sources/App/TrayIcon"
 
 for source in "$icon_source" "$menu_source"; do
   [[ -f "$source" ]] || { echo "Missing approved artwork: $source" >&2; exit 1; }
 done
-mkdir -p "$menu_set"
+mkdir -p "$tray_dir"
 
 resize() {
   sips --resampleHeightWidth "$2" "$2" "$1" --out "$3" >/dev/null
@@ -23,7 +25,7 @@ for size in 16 32 128 256 512; do
 done
 resize "$icon_source" 512 "$repo_dir/docs/icon.png"
 resize "$icon_source" 64 "$repo_dir/docs/favicon.png"
-resize "$menu_source" 22 "$menu_set/nose-boop-menu.png"
-resize "$menu_source" 44 "$menu_set/nose-boop-menu@2x.png"
+resize "$menu_source" 18 "$tray_dir/USBBoopTrayIcon.png"
+resize "$menu_source" 36 "$tray_dir/USBBoopTrayIcon@2x.png"
 
-echo "Packaged Nose Boop app, documentation, favicon, and menu-bar assets."
+echo "Packaged Nose Boop app, documentation, favicon, and tray icon assets."

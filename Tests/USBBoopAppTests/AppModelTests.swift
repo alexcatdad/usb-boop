@@ -1,20 +1,23 @@
+import MenubarKit
 @testable import USBBoopKit
 import UserNotifications
 import XCTest
 
 @MainActor
-final class AppTestMockCenter: NotificationCenterProtocol {
+final class AppTestMockCenter: NotificationCenterClient {
     var mockStatus: UNAuthorizationStatus = .authorized
     var grantOnRequest = true
     var requestCount = 0
-    var addedRequests: [UNNotificationRequest] = []
+    var addedRequests: [PostedNotification] = []
     func authorizationStatus() async -> UNAuthorizationStatus { mockStatus }
-    func requestAuthorization(options: UNAuthorizationOptions) async throws -> Bool {
+    func requestAuthorization() async throws -> Bool {
         requestCount += 1
         mockStatus = grantOnRequest ? .authorized : .denied
         return grantOnRequest
     }
-    func add(_ request: UNNotificationRequest) async throws { addedRequests.append(request) }
+    func add(_ notification: MenubarNotification, playSound: Bool) async throws {
+        addedRequests.append(PostedNotification(notification: notification, playSound: playSound))
+    }
 }
 
 @MainActor
@@ -32,7 +35,7 @@ final class AppModelTests: XCTestCase {
         defaults: UserDefaults? = nil,
         wait: @escaping ConnectionAlertBatcher.Wait = { }
     ) -> AppModel {
-        AppModel(monitor: monitor, makeNotifier: { UserNotificationCoordinator(center: center) },
+        AppModel(monitor: monitor, makeNotificationCenter: { center },
                  defaults: defaults ?? self.defaults(), alertWait: wait)
     }
 
@@ -133,7 +136,7 @@ final class AppModelTests: XCTestCase {
         release?.resume()
         for _ in 0..<30 { await Task.yield() }
         XCTAssertEqual(center.addedRequests.count, 1)
-        XCTAssertNil(center.addedRequests.first?.content.sound)
+        XCTAssertEqual(center.addedRequests.first?.playSound, false)
         model.stop()
     }
 

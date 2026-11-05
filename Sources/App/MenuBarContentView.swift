@@ -1,16 +1,24 @@
+import MenubarKit
 import SwiftUI
 import USBBoopKit
 
+/// The menu bar panel. MenubarKit's standard 340pt width fits a device row:
+/// name and copy button on one line, the link speed on its own line below.
 struct MenuBarContentView: View {
-    @Environment(\.openSettings) private var openSettings
     @Bindable var model: AppModel
     @State private var historyExpanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            monitoringStatus
+        MenubarPanel {
+            StatusHeader(model.status) {
+                RefreshButton(isRefreshing: false, title: "Refresh device list") { model.refreshDevices() }
+                    .keyboardShortcut("r", modifiers: .command)
+            }
+            if model.monitoringStatus.canRetry {
+                PrimaryActionButton("Try Again") { model.refreshDevices() }
+            }
             ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 10) {
                     if model.keepLatestResultPinned { latestResultCard }
                     currentDevicesSection
                     historySection
@@ -18,68 +26,58 @@ struct MenuBarContentView: View {
             }
             // MenuBarExtra can propose a minimal window size. A maximum
             // alone lets ScrollView collapse to almost zero height in that window.
-            .frame(height: 520)
-            controlsSection
+            .frame(height: 500)
+            notificationControls
+            MenuSection(quitTitle: "Quit usb-boop") {
+                OpenSettingsButton()
+                    .keyboardShortcut(",", modifiers: .command)
+            }
+            VersionFooter()
         }
-        .padding(16)
-        .frame(width: 390)
         .onAppear { model.becameActive() }
     }
 
-    @ViewBuilder private var monitoringStatus: some View {
-        if let message = model.monitoringMessage {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(message).font(.callout).foregroundStyle(.secondary)
-                if model.monitoringStatus.canRetry {
-                    Button("Retry") { model.refreshDevices() }
-                }
-            }
-        }
-    }
-
     private var latestResultCard: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Latest connection").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
-            if let device = model.latestConnectedDevice {
-                DeviceRow(device: device)
-                if let status = model.latestConnectionStatus {
-                    Text(status).font(.caption).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 2) {
+            TileHeader("Latest connection")
+            Group {
+                if let device = model.latestConnectedDevice {
+                    DeviceRow(device: device)
+                    if let status = model.latestConnectionStatus {
+                        Text(status).font(.caption).foregroundStyle(.secondary)
+                    }
+                } else {
+                    Text("Plug in a USB device to see its link speed.")
+                        .font(.callout).foregroundStyle(.secondary)
                 }
-            } else {
-                Text("Plug in a USB device to see its link speed.")
-                    .font(.callout).foregroundStyle(.secondary)
             }
+            .padding(.horizontal, 12)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(.quaternary.opacity(0.5), in: .rect(cornerRadius: 10))
+        .groupedTile()
     }
 
     private var currentDevicesSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Connected devices").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
-                Spacer()
-                Button { model.refreshDevices() } label: {
-                    Label("Refresh device list", systemImage: "arrow.clockwise").labelStyle(.iconOnly)
-                }
-                .buttonStyle(.borderless)
-                .keyboardShortcut("r", modifiers: .command)
-                .help("Refresh USB metadata")
-            }
-            if model.visibleDevices.isEmpty {
-                Text(model.emptyDevicesMessage).font(.callout).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .center).padding(.vertical, 8)
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 4) {
-                        ForEach(model.visibleDevices) { DeviceRow(device: $0) }
+        VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 2) {
+                TileHeader("Connected devices")
+                if model.visibleDevices.isEmpty {
+                    Text(model.emptyDevicesMessage).font(.callout).foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center).padding(.vertical, 8)
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 4) {
+                            ForEach(model.visibleDevices) { DeviceRow(device: $0) }
+                        }
+                        .padding(.horizontal, 12)
                     }
+                    .frame(height: min(320, CGFloat(model.visibleDevices.count) * 82))
                 }
-                .frame(height: min(320, CGFloat(model.visibleDevices.count) * 82))
             }
+            .groupedTile()
             Text("Link speed is the negotiated connection rate, not measured file-transfer speed.")
                 .font(.caption).foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
         }
     }
 
@@ -112,11 +110,11 @@ struct MenuBarContentView: View {
             }.padding(.top, 8)
         }
         .font(.subheadline)
+        .padding(.horizontal, 4)
     }
 
-    private var controlsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Divider()
+    private var notificationControls: some View {
+        VStack(alignment: .leading, spacing: 6) {
             Toggle("Notifications", isOn: Binding(
                 get: { model.notificationsEnabled },
                 set: { value in Task { await model.setNotificationsEnabled(value) } }
@@ -124,23 +122,14 @@ struct MenuBarContentView: View {
             .toggleStyle(.switch).controlSize(.small)
             if model.notificationAuthorization != .authorized {
                 Text(model.notificationAuthorizationSummary).font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 if model.notificationsEnabled, model.canRequestNotifications {
                     Button("Enable notifications") { Task { await model.setNotificationsEnabled(true) } }
                         .disabled(model.isRequestingNotificationAuthorization)
                 }
             }
-            HStack {
-                Button("Settings…") {
-                    NSApplication.shared.activate()
-                    openSettings()
-                }
-                .buttonStyle(.borderless)
-                .keyboardShortcut(",", modifiers: .command)
-                Spacer()
-                Button("Quit") { NSApplication.shared.terminate(nil) }
-                    .buttonStyle(.borderless).keyboardShortcut("q", modifiers: .command)
-            }.font(.callout)
         }
+        .padding(.horizontal, 4)
     }
 }
 

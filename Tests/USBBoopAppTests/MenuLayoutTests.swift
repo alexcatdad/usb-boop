@@ -1,4 +1,5 @@
 import AppKit
+import MenubarKit
 import SwiftUI
 @testable import USBBoopKit
 import XCTest
@@ -22,10 +23,10 @@ final class MenuLayoutTests: XCTestCase {
         view.appearance = NSAppearance(named: .aqua)
         let size = view.fittingSize
         // MenuBarExtra can propose a minimal size instead of the ideal fitting size.
-        let minimumSize = controller.sizeThatFits(in: CGSize(width: 390, height: 0))
+        let minimumSize = controller.sizeThatFits(in: CGSize(width: MenubarMetrics.panelWidth, height: 0))
         XCTAssertGreaterThanOrEqual(minimumSize.height, 600)
         XCTAssertLessThanOrEqual(size.height, 740)
-        XCTAssertEqual(size.width, 390, accuracy: 1)
+        XCTAssertEqual(size.width, MenubarMetrics.panelWidth, accuracy: 1)
         view.frame = NSRect(origin: .zero, size: size)
         view.layoutSubtreeIfNeeded()
         if let destination = ProcessInfo.processInfo.environment["USB_BOOP_RENDER_ARTIFACTS"] {

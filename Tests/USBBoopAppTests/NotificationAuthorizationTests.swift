@@ -1,9 +1,10 @@
+import MenubarKit
 @testable import USBBoopKit
 import UserNotifications
 import XCTest
 
 @MainActor
-private final class AuthorizationTestCenter: NotificationCenterProtocol {
+private final class AuthorizationTestCenter: NotificationCenterClient {
     var status: UNAuthorizationStatus = .notDetermined
     var requestError: Error?
     var suspendRequest = false
@@ -13,7 +14,7 @@ private final class AuthorizationTestCenter: NotificationCenterProtocol {
 
     func authorizationStatus() async -> UNAuthorizationStatus { status }
 
-    func requestAuthorization(options: UNAuthorizationOptions) async throws -> Bool {
+    func requestAuthorization() async throws -> Bool {
         requestCount += 1
         if suspendRequest {
             await withCheckedContinuation { continuation in
@@ -26,7 +27,7 @@ private final class AuthorizationTestCenter: NotificationCenterProtocol {
         return true
     }
 
-    func add(_ request: UNNotificationRequest) async throws { }
+    func add(_ notification: MenubarNotification, playSound: Bool) async throws { }
 
     func finishRequest() {
         continuation?.resume()
@@ -53,9 +54,7 @@ final class NotificationAuthorizationTests: XCTestCase {
         let detail = "Notification service could not register this app."
         center.requestError = NSError(domain: "AuthorizationTest", code: 19,
                                       userInfo: [NSLocalizedDescriptionKey: detail])
-        let model = AppModel(monitor: FixtureUSBMonitor(devices: []), makeNotifier: {
-            UserNotificationCoordinator(center: center)
-        }, defaults: defaults())
+        let model = AppModel(monitor: FixtureUSBMonitor(devices: []), makeNotificationCenter: { center }, defaults: defaults())
         model.start()
         await model.refreshAuthorization()
         await model.setNotificationsEnabled(true)
@@ -82,9 +81,7 @@ final class NotificationAuthorizationTests: XCTestCase {
                                       userInfo: [NSLocalizedDescriptionKey: detail])
         let started = expectation(description: "permission request started")
         center.requestStarted = { started.fulfill() }
-        let model = AppModel(monitor: FixtureUSBMonitor(devices: []), makeNotifier: {
-            UserNotificationCoordinator(center: center)
-        }, defaults: defaults())
+        let model = AppModel(monitor: FixtureUSBMonitor(devices: []), makeNotificationCenter: { center }, defaults: defaults())
         model.start()
         await model.refreshAuthorization()
         let first = Task { await model.setNotificationsEnabled(true) }
@@ -110,9 +107,7 @@ final class NotificationAuthorizationTests: XCTestCase {
         let detail = "Notifications are not allowed for this application."
         center.requestError = NSError(domain: UNErrorDomain, code: 1,
                                       userInfo: [NSLocalizedDescriptionKey: detail])
-        let model = AppModel(monitor: FixtureUSBMonitor(devices: []), makeNotifier: {
-            UserNotificationCoordinator(center: center)
-        }, defaults: defaults())
+        let model = AppModel(monitor: FixtureUSBMonitor(devices: []), makeNotificationCenter: { center }, defaults: defaults())
         model.start()
         await model.refreshAuthorization()
         await model.setNotificationsEnabled(true)
@@ -136,9 +131,7 @@ final class NotificationAuthorizationTests: XCTestCase {
         let oldStarted = expectation(description: "old request started")
         old.requestStarted = { oldStarted.fulfill() }
         let selection = AuthorizationCenterSelection(old)
-        let model = AppModel(monitor: FixtureUSBMonitor(devices: []), makeNotifier: {
-            UserNotificationCoordinator(center: selection.center)
-        }, defaults: defaults())
+        let model = AppModel(monitor: FixtureUSBMonitor(devices: []), makeNotificationCenter: { selection.center }, defaults: defaults())
         model.start()
         await model.refreshAuthorization()
         let oldRequest = Task { await model.setNotificationsEnabled(true) }

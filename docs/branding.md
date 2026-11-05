@@ -28,12 +28,12 @@ from the app's bundled icon; it is not a separate illustration.
 The menu bar uses a front-facing cat-head silhouette with a bold USB trident
 cut out of its center. Alex requested the USB symbol to make the purpose clear
 at a glance after the original nose-and-plug miniature proved hard to read.
-At 22 points, omit face details and motion marks. Both the outside and the
+At the 18-point tray size, omit face details and motion marks. Both the outside and the
 trident are transparent, so macOS can tint the template for light and dark
 appearances. Keep the full Nose Boop illustration for app icons and larger surfaces.
 
 - Canonical artwork: [nose-boop-menu-source.png](../Design/nose-boop-menu-source.png)
-- Bundled template sizes: [MenuBarIcon.imageset](../Sources/App/Assets.xcassets/MenuBarIcon.imageset)
+- Bundled template sizes (18 and 36 px, loaded by MenubarKit's `TrayIconLoader`): [TrayIcon](../Sources/App/TrayIcon)
 
 ## Future references
 

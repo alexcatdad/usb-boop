@@ -287,9 +287,12 @@ shellcheck scripts/generate_icon_assets.sh
 ```
 
 The script uses macOS `sips` to resize the approved artwork, without changing the
-design. It updates all ten AppIcon sizes, the 1x/2x monochrome MenuBarIcon assets,
-README/site `docs/icon.png`, and `docs/favicon.png`. The menu-bar catalog marks
-its image as a template; `USBBoopApp` loads it instead of the generic cable symbol.
+design. It updates all ten AppIcon sizes, the 18/36 px monochrome
+`Sources/App/TrayIcon/USBBoopTrayIcon` PNGs, README/site `docs/icon.png`, and
+`docs/favicon.png`. MenubarKit's `TrayIconLoader` loads the tray PNGs as a template
+image (they stay outside the asset catalog, and `COMBINE_HIDPI_IMAGES` is off so
+they are not merged into a TIFF); if loading fails the tray falls back to the
+`cable.connector` symbol.
 Notifications inherit the app's compiled icon rather than attaching extra artwork.
 Keep the existing accessible menu-bar name, `usb-boop`.
 
