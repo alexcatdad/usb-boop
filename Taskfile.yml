@@ -30,7 +30,7 @@ tasks:
 
   generate:
     internal: true
-    sources: [project.yml]
+    # Not cached: XcodeGen globs Sources/ and Tests/, so new files must regenerate.
     cmds:
       - xcodegen generate
 
