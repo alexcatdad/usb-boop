@@ -47,7 +47,7 @@ git fetch origin
 git log HEAD..origin/main --oneline
 gh pr list
 gh issue list
-gh run list --workflow ci.yml -L 3
+gh run list --workflow validation.yml -L 3
 ```
 
 Review incoming commits and preserve local files before updating the checkout.

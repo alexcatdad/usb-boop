@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/alexcatdad/usb-boop/releases/latest"><img src="https://img.shields.io/github/v/release/alexcatdad/usb-boop?style=flat-square&label=latest" alt="Latest Release"></a>
-  <a href="https://github.com/alexcatdad/usb-boop/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/alexcatdad/usb-boop/ci.yml?style=flat-square&label=CI" alt="CI Status"></a>
+  <a href="https://github.com/alexcatdad/usb-boop/actions/workflows/validation.yml"><img src="https://img.shields.io/github/actions/workflow/status/alexcatdad/usb-boop/validation.yml?style=flat-square&label=CI" alt="CI Status"></a>
   <img src="https://img.shields.io/badge/platform-macOS%2014%2B-blue?style=flat-square" alt="macOS 14+">
   <img src="https://img.shields.io/badge/arch-Apple%20Silicon-blue?style=flat-square" alt="Apple Silicon">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/alexcatdad/usb-boop?style=flat-square" alt="MIT License"></a>

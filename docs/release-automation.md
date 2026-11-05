@@ -53,7 +53,7 @@ the build-then-notarize order of `release:prepare` does not provide. The scripts
 are kept; see the [DMG runbook](development-runbook.md#dmg-installer).
 
 The checksum is calculated after notarization and stapling. Install checks for
-the produced zip: `validate:macos-arm64` verifies identity, version,
+the produced zip: `validate:darwin-arm64` verifies identity, version,
 architecture, Developer ID, Hardened Runtime and entitlements before
 notarization; reltool then verifies, notarizes and staples, and `release`
 publishes via a draft release.
@@ -82,11 +82,11 @@ lands. They would need the Fedora worker (`runs: worker`) or cross-compilation.
 
 ## GitHub workflows
 
-- [ci.yml](../.github/workflows/ci.yml) builds, tests, lints, and validates the
-  generated Homebrew cask on pull requests and `main`.
-- [security.yml](../.github/workflows/security.yml) checks workflow supply chain,
-  workflow/shell correctness, and Swift code on pull requests, `main`, and a
-  weekly schedule.
+- [validation.yml](../.github/workflows/validation.yml) calls
+  `alexcatdad/ci-actions` (secret scan, dependency review, `task lint`,
+  `task build`; on `main` `task test` and `task security`; CodeQL for Swift) on
+  pull requests, `main`, and a weekly schedule, and lints the generated
+  Homebrew cask (`task cask:lint`).
 - [pages.yml](../.github/workflows/pages.yml) publishes the documentation site.
 
 There is no release workflow. The tap is updated by the local release task from

@@ -14,10 +14,42 @@ vars:
 tasks:
   # --- app-owned recipes ---
   check:
-    desc: Lint, generate the project and run the unit tests (what CI runs).
+    desc: The full local gate (lint, build, tests, security); CI runs the same tasks.
+    cmds:
+      - task: lint
+      - task: build
+      - task: test
+      - task: security
+
+  lint:
+    desc: SwiftLint (strict), plus actionlint and shellcheck when installed.
     cmds:
       - swiftlint --strict
+      - if command -v actionlint >/dev/null; then actionlint; fi
+      - if command -v shellcheck >/dev/null; then shellcheck --severity=style scripts/*.sh; fi
+
+  generate:
+    internal: true
+    sources: [project.yml]
+    cmds:
       - xcodegen generate
+
+  build:
+    desc: Generate the Xcode project and build the app (unsigned).
+    deps: [generate]
+    cmds:
+      - >-
+        xcodebuild
+        -project usb-boop.xcodeproj
+        -scheme usb-boop
+        -destination 'platform=macOS,arch=arm64'
+        CODE_SIGNING_ALLOWED=NO
+        build
+
+  test:
+    desc: Run the unit and IOKit integration tests (unsigned).
+    deps: [generate]
+    cmds:
       - >-
         xcodebuild
         -project usb-boop.xcodeproj
@@ -26,12 +58,22 @@ tasks:
         CODE_SIGNING_ALLOWED=NO
         test
 
-  build:macos-arm64:
+  security:
+    desc: Check the sandbox, USB entitlement and Hardened Runtime invariants.
+    cmds:
+      - ./scripts/check_security.sh
+
+  cask:lint:
+    desc: Generate the Homebrew cask and lint it in a throwaway tap (uses brew).
+    cmds:
+      - ./scripts/lint_cask.sh
+
+  build:darwin-arm64:
     desc: Build, sign and zip the app into $RELEASE_OUT (called by reltool).
     cmds:
       - ./scripts/build_release_zip.sh
 
-  validate:macos-arm64:
+  validate:darwin-arm64:
     desc: Verify the signed zip before notarization (called by reltool).
     cmds:
       - VERIFY_BEFORE_NOTARIZATION=1 ./scripts/verify_release_artifact.sh "$RELEASE_OUT/usb-boop-macos-arm64.zip" "$RELEASE_VERSION"

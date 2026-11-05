@@ -1,0 +1,60 @@
+name: Validation
+
+# Validation only, through alexcatdad/ci-actions. Nothing here builds a
+# release, signs, publishes or updates the Homebrew tap. The weekly schedule
+# reruns the main contract and CodeQL so new advisories surface without a change.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 6 * * 1'
+
+permissions: {}
+
+jobs:
+  pr:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    uses: alexcatdad/ci-actions/.github/workflows/validate-pr.yml@52f4ee6585b8297fb44defc47cb00c316f004280 # main
+    with:
+      runner: macos-26
+      lint-command: ./scripts/ci_setup.sh && task lint
+      build-command: ./scripts/ci_setup.sh && task build
+
+  main:
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+    permissions:
+      contents: read
+    uses: alexcatdad/ci-actions/.github/workflows/validate-main.yml@52f4ee6585b8297fb44defc47cb00c316f004280 # main
+    with:
+      runner: macos-26
+      test-command: ./scripts/ci_setup.sh && task test
+      security-command: ./scripts/ci_setup.sh && task security
+
+  codeql:
+    # The one allowed write scope: uploading code scanning results.
+    permissions:
+      contents: read
+      security-events: write
+    uses: alexcatdad/ci-actions/.github/workflows/codeql.yml@52f4ee6585b8297fb44defc47cb00c316f004280 # main
+    with:
+      languages: '["swift"]'
+      swift-build-command: ./scripts/ci_codeql_build.sh
+      queries: security-and-quality
+
+  cask:
+    name: Validate Homebrew cask
+    runs-on: macos-26
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Generate and lint the cask
+        run: ./scripts/lint_cask.sh

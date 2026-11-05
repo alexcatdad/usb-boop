@@ -26,3 +26,6 @@ fastlane/test_output
 
 # Claude Code local state and worktrees
 .claude/
+
+# Task checksums
+.task/
