@@ -1,9 +1,10 @@
+import MenubarKit
 @testable import USBBoopKit
 import UserNotifications
 import XCTest
 
 @MainActor
-private final class SuspendedNotificationCenter: NotificationCenterProtocol {
+private final class SuspendedNotificationCenter: NotificationCenterClient {
     var status: UNAuthorizationStatus = .authorized
     var shouldSuspend = false
     var entered: (() -> Void)?
@@ -21,8 +22,8 @@ private final class SuspendedNotificationCenter: NotificationCenterProtocol {
         }
         return captured
     }
-    func requestAuthorization(options: UNAuthorizationOptions) async throws -> Bool { true }
-    func add(_ request: UNNotificationRequest) async throws { added += 1 }
+    func requestAuthorization() async throws -> Bool { true }
+    func add(_ notification: MenubarNotification, playSound: Bool) async throws { added += 1 }
 }
 
 @MainActor
@@ -44,9 +45,7 @@ final class NotificationLifecycleTests: XCTestCase {
         old.status = .denied
         let new = SuspendedNotificationCenter()
         let selection = NotificationCenterSelection(old)
-        let model = AppModel(monitor: FixtureUSBMonitor(devices: []), makeNotifier: {
-            UserNotificationCoordinator(center: selection.center)
-        }, defaults: defaults())
+        let model = AppModel(monitor: FixtureUSBMonitor(devices: []), makeNotificationCenter: { selection.center }, defaults: defaults())
         model.start()
         await model.refreshAuthorization()
         let entered = expectation(description: "old settings check suspended")
@@ -69,7 +68,7 @@ final class NotificationLifecycleTests: XCTestCase {
         for action in ["detach", "disable", "stop"] {
             let center = SuspendedNotificationCenter()
             let monitor = FixtureUSBMonitor(devices: [])
-            let model = AppModel(monitor: monitor, makeNotifier: { UserNotificationCoordinator(center: center) },
+            let model = AppModel(monitor: monitor, makeNotificationCenter: { center },
                                  defaults: defaults(), alertWait: { })
             model.start()
             await model.refreshAuthorization()

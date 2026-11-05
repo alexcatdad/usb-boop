@@ -1,4 +1,5 @@
 import Foundation
+import MenubarKit
 import Observation
 import USBBoopKit
 
@@ -9,7 +10,7 @@ final class AppModel {
     private(set) var currentDevices: [USBDevice] = []
     private(set) var latestConnectedDevice: USBDevice?
     private(set) var history: [USBObservation] = []
-    private(set) var notificationAuthorization: UserNotificationCoordinator.AuthorizationState = .notDetermined
+    private(set) var notificationAuthorization: NotificationAuthorization = .notDetermined
     private(set) var isRequestingNotificationAuthorization = false
     private(set) var notificationsEnabled: Bool {
         didSet {
@@ -29,33 +30,32 @@ final class AppModel {
 
     let loginItem: LoginItemController
     private let monitor: any USBMonitoring
-    private let makeNotifier: @MainActor @Sendable () -> UserNotificationCoordinator
-    private var notifier: UserNotificationCoordinator?
+    private let makeNotificationCenter: @MainActor @Sendable () -> any NotificationCenterClient
+    private var notifier: ConnectionNotifier?
     private let defaults: UserDefaults
     private let alertWait: ConnectionAlertBatcher.Wait
     private var hasStarted = false
     private var alertedConnections: Set<UInt64> = []
     @ObservationIgnored private lazy var alertBatcher = ConnectionAlertBatcher(wait: alertWait) { [weak self] devices in
-        guard let self, self.hasStarted, self.notificationsEnabled, let notifier = self.notifier else { return }
-        _ = await notifier.sendConnectionNotification(for: devices, soundEnabled: self.notificationSoundEnabled)
-        guard self.hasStarted, self.notifier === notifier else { return }
-        self.notificationAuthorization = notifier.authorizationState
+        await self?.deliverConnectionAlert(for: devices)
     }
 
-    static let notificationsEnabledKey = "notificationsEnabled"
-    static let notificationSoundEnabledKey = "notificationSoundEnabled"
+    nonisolated static let notificationsEnabledKey = "notificationsEnabled"
+    nonisolated static let notificationSoundEnabledKey = "notificationSoundEnabled"
     static let keepLatestResultPinnedKey = "keepLatestResultPinned"
     static let showHubsKey = "showHubs"
 
     init(
         monitor: any USBMonitoring = USBMonitorFactory.makeMonitor(),
-        makeNotifier: @escaping @MainActor @Sendable () -> UserNotificationCoordinator = { UserNotificationCoordinator() },
+        makeNotificationCenter: @escaping @MainActor @Sendable () -> any NotificationCenterClient = {
+            SystemNotificationCenter()
+        },
         defaults: UserDefaults = .standard,
         loginItem: LoginItemController = LoginItemController(),
         alertWait: @escaping ConnectionAlertBatcher.Wait = { try await Task.sleep(for: .seconds(1)) }
     ) {
         self.monitor = monitor
-        self.makeNotifier = makeNotifier
+        self.makeNotificationCenter = makeNotificationCenter
         self.defaults = defaults
         self.loginItem = loginItem
         self.alertWait = alertWait
@@ -98,7 +98,7 @@ final class AppModel {
     func start() {
         guard !hasStarted else { return }
         hasStarted = true
-        notifier = makeNotifier()
+        notifier = ConnectionNotifier(center: makeNotificationCenter(), preferences: notificationPreferences)
         monitor.start()
         Task { [weak self] in await self?.refreshAuthorization() }
     }
@@ -124,12 +124,12 @@ final class AppModel {
 
     func refreshAuthorization() async {
         guard let notifier else { return }
-        _ = await notifier.refreshAuthorizationState()
+        let authorization = await notifier.authorization()
         guard hasStarted, self.notifier === notifier else { return }
         // A passive refresh must not hide why the user's last Enable action failed.
-        switch (notificationAuthorization, notifier.authorizationState) {
+        switch (notificationAuthorization, authorization) {
         case (.failed, .notDetermined): break
-        default: notificationAuthorization = notifier.authorizationState
+        default: notificationAuthorization = authorization
         }
         if notificationAuthorization != .authorized { alertBatcher.cancel() }
     }
@@ -142,10 +142,21 @@ final class AppModel {
         defer {
             if self.notifier === notifier { isRequestingNotificationAuthorization = false }
         }
-        _ = await notifier.requestAuthorizationIfNeeded()
+        let authorization = await notifier.requestAuthorization()
         guard hasStarted, self.notifier === notifier else { return }
-        notificationAuthorization = notifier.authorizationState
+        notificationAuthorization = authorization
         if notificationAuthorization != .authorized { alertBatcher.cancel() }
+    }
+
+    /// Read by MenubarNotifier on every delivery, so turning the toggle off takes effect at once.
+    private var notificationPreferences: @Sendable () -> NotificationPreferences {
+        let store = ThreadSafeDefaults(defaults: defaults)
+        return {
+            NotificationPreferences(
+                enabled: store.defaults.bool(forKey: AppModel.notificationsEnabledKey),
+                soundEnabled: store.defaults.bool(forKey: AppModel.notificationSoundEnabledKey)
+            )
+        }
     }
 
     private func bindMonitor() {
@@ -176,11 +187,26 @@ final class AppModel {
         }
     }
 
+    private func deliverConnectionAlert(for devices: [USBDevice]) async {
+        guard hasStarted, notificationsEnabled, let notifier else { return }
+        // MenubarNotifier re-reads the toggle and re-checks permission before posting.
+        let outcome = await notifier.deliver(devices)
+        guard outcome == .notAuthorized, hasStarted, self.notifier === notifier else { return }
+        await refreshAuthorization()
+    }
+
     private func receiveAttachment(_ device: USBDevice) {
         latestConnectedDevice = device
         guard alertedConnections.insert(device.id).inserted else { return }
         guard hasStarted, notificationsEnabled, !device.isHub,
-              notifier?.authorizationState == .authorized else { return }
+              notificationAuthorization == .authorized else { return }
         alertBatcher.enqueue(device)
     }
+}
+
+/// `UserDefaults` is documented as thread-safe, but Foundation does not mark it
+/// `Sendable`. MenubarNotifier reads the preferences from its own task, so this
+/// box only carries the reference there; it is never mutated.
+private struct ThreadSafeDefaults: @unchecked Sendable {
+    let defaults: UserDefaults
 }
