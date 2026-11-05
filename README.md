@@ -125,14 +125,14 @@ Set `USB_BOOP_USE_FIXTURES=1` in the Xcode scheme environment to run with simula
 Sources/
   App/                    SwiftUI app, menu bar, settings
     AppModel.swift        Observable state, monitor + notification orchestration
-    MenuBarContentView    Companion window with device list
+    MenuBarContentView    Menu bar panel (MenubarKit) with device list
+    ConnectionNotifier    Connection banners via MenubarKit's notifier
     SettingsView          Preferences
   USBBoopKit/             Reusable framework
     IOKitUSBMonitor       Real USB monitoring via IOKit
     FixtureUSBMonitor     Mock monitor for development
     USBDevice             Device model
     USBConnectionSpeed    Speed enum with display labels
-    UserNotificationCoordinator  macOS notification handling
 Tests/
   USBBoopKitTests/        Framework unit + integration tests
   USBBoopAppTests/        App model tests
