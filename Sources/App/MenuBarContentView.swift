@@ -2,11 +2,18 @@ import MenubarKit
 import SwiftUI
 import USBBoopKit
 
-/// The menu bar panel. MenubarKit's standard 340pt width fits a device row:
-/// name and copy button on one line, the link speed on its own line below.
+/// The menu bar panel, laid out like the other MenubarKit apps: status header,
+/// grouped tiles of standard list rows, the menu section and the version footer.
 struct MenuBarContentView: View {
     @Bindable var model: AppModel
-    @State private var historyExpanded = false
+
+    /// Height of one two-line `ListRowButton`, used to size the scrolling list.
+    /// MenuBarExtra can propose a minimal window size, and a maximum height
+    /// alone lets a ScrollView collapse in that window, so lists get an
+    /// explicit height.
+    static let rowHeight: CGFloat = 40
+    static let maxVisibleDevices = 7
+    static let recentActivityCount = 3
 
     var body: some View {
         MenubarPanel {
@@ -17,17 +24,13 @@ struct MenuBarContentView: View {
             if model.monitoringStatus.canRetry {
                 PrimaryActionButton("Try Again") { model.refreshDevices() }
             }
-            ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
-                    if model.keepLatestResultPinned { latestResultCard }
-                    currentDevicesSection
-                    historySection
-                }
+            if model.keepLatestResultPinned, let device = model.latestConnectedDevice {
+                latestConnectionTile(device)
             }
-            // MenuBarExtra can propose a minimal window size. A maximum
-            // alone lets ScrollView collapse to almost zero height in that window.
-            .frame(height: 500)
-            notificationControls
+            devicesTile
+            if !model.visibleHistory.isEmpty {
+                recentActivityTile
+            }
             MenuSection(quitTitle: "Quit usb-boop") {
                 OpenSettingsButton()
                     .keyboardShortcut(",", modifiers: .command)
@@ -37,158 +40,132 @@ struct MenuBarContentView: View {
         .onAppear { model.becameActive() }
     }
 
-    private var latestResultCard: some View {
-        VStack(alignment: .leading, spacing: 2) {
+    private func latestConnectionTile(_ device: USBDevice) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
             TileHeader("Latest connection")
-            Group {
-                if let device = model.latestConnectedDevice {
-                    DeviceRow(device: device)
-                    if let status = model.latestConnectionStatus {
-                        Text(status).font(.caption).foregroundStyle(.secondary)
-                    }
-                } else {
-                    Text("Plug in a USB device to see its link speed.")
-                        .font(.callout).foregroundStyle(.secondary)
-                }
-            }
-            .padding(.horizontal, 12)
+            DeviceRow(device: device, subtitle: model.latestConnectionStatus ?? device.connectionSummary)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .groupedTile()
     }
 
-    private var currentDevicesSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            VStack(alignment: .leading, spacing: 2) {
-                TileHeader("Connected devices")
-                if model.visibleDevices.isEmpty {
-                    Text(model.emptyDevicesMessage).font(.callout).foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .center).padding(.vertical, 8)
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 4) {
-                            ForEach(model.visibleDevices) { DeviceRow(device: $0) }
-                        }
-                        .padding(.horizontal, 12)
-                    }
-                    .frame(height: min(320, CGFloat(model.visibleDevices.count) * 82))
-                }
-            }
-            .groupedTile()
-            Text("Link speed is the negotiated connection rate, not measured file-transfer speed.")
-                .font(.caption).foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
-        }
-    }
-
-    private var historySection: some View {
-        DisclosureGroup("Recent activity", isExpanded: $historyExpanded) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("This session · last 50 observations").font(.caption).foregroundStyle(.secondary)
-                    Spacer()
-                    Button("Clear") { model.clearHistory() }.disabled(model.history.isEmpty)
-                }
-                if model.visibleHistory.isEmpty {
-                    Text("No recent activity.").font(.callout).foregroundStyle(.secondary)
-                } else {
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 10) {
-                            ForEach(model.visibleHistory) { observation in
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(observation.device.name).font(.callout).lineLimit(1)
-                                        .help(observation.device.name)
-                                    Text("\(observation.kind.label) · \(observation.device.linkSpeedSummary)")
-                                        .font(.caption).foregroundStyle(.secondary)
-                                    Text(observation.observedAt, style: .time).font(.caption.monospacedDigit())
-                                }
-                                .accessibilityElement(children: .combine)
-                            }
-                        }
-                    }.frame(height: min(140, CGFloat(model.visibleHistory.count) * 66))
-                }
-            }.padding(.top, 8)
-        }
-        .font(.subheadline)
-        .padding(.horizontal, 4)
-    }
-
-    private var notificationControls: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Toggle(
-                "Notifications",
-                isOn: Binding(
-                    get: { model.notificationsEnabled },
-                    set: { value in Task { await model.setNotificationsEnabled(value) } }
-                )
-            )
-            .toggleStyle(.switch).controlSize(.small)
-            if model.notificationAuthorization != .authorized {
-                Text(model.notificationAuthorizationSummary).font(.caption).foregroundStyle(.secondary)
+    private var devicesTile: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            TileHeader("Connected devices")
+            if model.visibleDevices.isEmpty {
+                Text(model.emptyDevicesMessage)
+                    .font(.callout).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                if model.notificationsEnabled, model.canRequestNotifications {
-                    Button("Enable notifications") { Task { await model.setNotificationsEnabled(true) } }
-                        .disabled(model.isRequestingNotificationAuthorization)
+                    .padding(.horizontal, 12).padding(.vertical, 4)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(model.visibleDevices) { DeviceRow(device: $0, subtitle: $0.connectionSummary) }
+                    }
                 }
+                .frame(height: Self.listHeight(rows: model.visibleDevices.count, visible: Self.maxVisibleDevices))
             }
         }
-        .padding(.horizontal, 4)
+        .groupedTile()
+        .help("Link speed is the negotiated connection rate, not measured file-transfer speed.")
+    }
+
+    private var recentActivityTile: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            TileHeader("Recent activity", linkTitle: "Clear") { model.clearHistory() }
+            ForEach(model.visibleHistory.prefix(Self.recentActivityCount)) { observation in
+                HStack(spacing: 8) {
+                    Text(observation.device.name).lineLimit(1).truncationMode(.tail)
+                    Spacer(minLength: 4)
+                    Text(observation.kind.label).foregroundStyle(.secondary)
+                    Text(observation.observedAt, style: .time)
+                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                }
+                .font(.callout)
+                .padding(.horizontal, 12)
+                .frame(minHeight: 24)
+                .help(observation.device.name)
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .groupedTile()
+    }
+
+    static func listHeight(rows: Int, visible: Int) -> CGFloat {
+        CGFloat(min(rows, visible)) * rowHeight
     }
 }
 
+/// A device in MenubarKit's list-row style: the name and a connection
+/// subtitle, with the negotiated link speed as the row's prominent trailing
+/// value (AGENTS.md: speed is the visually prominent element). Clicking
+/// copies the device info.
 private struct DeviceRow: View {
     let device: USBDevice
+    let subtitle: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack {
-                Text(device.name).font(.callout.weight(.medium)).lineLimit(1).help(device.name)
-                Spacer(minLength: 4)
-                Button(action: copyDeviceInfo) {
-                    Label("Copy device info", systemImage: "doc.on.doc").labelStyle(.iconOnly)
+        Button(action: copyDeviceInfo) {
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(device.name).font(.callout).lineLimit(1)
+                    Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 }
-                .buttonStyle(.borderless)
-                .help("Copy device info")
-                .accessibilityLabel("Copy info for \(device.name)")
+                Spacer(minLength: 8)
+                Text(device.speed.displayLabel)
+                    .font(.body.weight(.semibold).monospacedDigit())
+                    .foregroundStyle(device.speed.tint)
+                    .lineLimit(1)
             }
-            Text(device.linkSpeedSummary)
-                .font(.callout.weight(.semibold).monospacedDigit())
-                .foregroundStyle(speedColor)
-            HStack(spacing: 4) {
-                if device.isHub { Text("Hub ·") }
-                Text(device.connectedAt == nil ? "Seen since" : "Connected at")
-                Text((device.connectedAt ?? device.firstSeenAt).formatted(date: .abbreviated, time: .shortened))
-            }.font(.caption).foregroundStyle(.secondary)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 5).padding(.horizontal, 4)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(device.name), \(device.linkSpeedSummary)")
-        .accessibilityAction(named: Text("Copy device info"), copyDeviceInfo)
+        .buttonStyle(ListRowButtonStyle())
+        .help("Copy info for \(device.name)")
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(device.name), \(device.linkSpeedSummary), \(subtitle)")
+        .accessibilityHint("Copies the device info")
         .contextMenu { Button("Copy Device Info", action: copyDeviceInfo) }
     }
 
-    private var speedColor: Color {
-        switch device.speed {
-        case .usb3Gen2x2, .usb3Gen2: .green
-        case .usb3Gen1: .blue
-        case .usb2High: .orange
-        default: .secondary
-        }
-    }
-
     private func copyDeviceInfo() {
-        var lines = [device.name, device.linkSpeedSummary]
-        if let technical = device.speed.technicalLabel { lines.append(technical) }
-        if let manufacturer = device.manufacturer { lines.append("Manufacturer: \(manufacturer)") }
-        if let identifiers = device.vendorProductSummary { lines.append(identifiers) }
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(lines.joined(separator: "\n"), forType: .string)
+        NSPasteboard.general.setString(device.copyableInfo, forType: .string)
     }
 }
 
-private extension USBObservation.Kind {
-    var label: String {
+extension USBConnectionSpeed {
+    /// The speed tier's colour: the fastest links stand out, unknown speeds stay neutral.
+    var tint: Color {
+        switch self {
+        case .usb3Gen2x2, .usb3Gen2: .green
+        case .usb3Gen1: .blue
+        case .usb2High: .orange
+        default: .primary
+        }
+    }
+}
+
+extension USBDevice {
+    /// The text "Copy Device Info" puts on the pasteboard.
+    var copyableInfo: String {
+        var lines = [name, linkSpeedSummary]
+        if let technical = speed.technicalLabel { lines.append(technical) }
+        if let manufacturer { lines.append("Manufacturer: \(manufacturer)") }
+        if let identifiers = vendorProductSummary { lines.append(identifiers) }
+        return lines.joined(separator: "\n")
+    }
+
+    /// "Connected 15:31", or "Hub · seen since 6 Nov, 15:30" for devices
+    /// present before monitoring started.
+    var connectionSummary: String {
+        let prefix = isHub ? "Hub · " : ""
+        if let connectedAt {
+            return prefix + "Connected " + connectedAt.formatted(date: .omitted, time: .shortened)
+        }
+        return prefix + "Seen since " + firstSeenAt.formatted(date: .abbreviated, time: .shortened)
+    }
+}
+
+extension USBObservation.Kind {
+    fileprivate var label: String {
         switch self {
         case .attached: "Connected"
         case .detached: "Disconnected"
