@@ -7,10 +7,8 @@ import USBBoopKit
 struct MenuBarContentView: View {
     @Bindable var model: AppModel
 
-    /// Height of one two-line `ListRowButton`, used to size the scrolling list.
-    /// MenuBarExtra can propose a minimal window size, and a maximum height
-    /// alone lets a ScrollView collapse in that window, so lists get an
-    /// explicit height.
+    /// Height of one device row; the list shows up to `maxVisibleDevices`
+    /// rows before it scrolls.
     static let rowHeight: CGFloat = 40
     static let maxVisibleDevices = 7
     static let recentActivityCount = 3
@@ -31,7 +29,7 @@ struct MenuBarContentView: View {
             if !model.visibleHistory.isEmpty {
                 recentActivityTile
             }
-            MenuSection(quitTitle: "Quit usb-boop") {
+            MenuSection(quitTitle: "Quit usb-boop", quitHelp: "Stops monitoring until you open usb-boop again.") {
                 OpenSettingsButton()
                     .keyboardShortcut(",", modifiers: .command)
             }
@@ -57,12 +55,11 @@ struct MenuBarContentView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 12).padding(.vertical, 4)
             } else {
-                ScrollView {
+                BoundedScrollView(maxHeight: Self.deviceListMaxHeight) {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(model.visibleDevices) { DeviceRow(device: $0, subtitle: $0.connectionSummary) }
                     }
                 }
-                .frame(height: Self.listHeight(rows: model.visibleDevices.count, visible: Self.maxVisibleDevices))
             }
         }
         .groupedTile()
@@ -90,9 +87,7 @@ struct MenuBarContentView: View {
         .groupedTile()
     }
 
-    static func listHeight(rows: Int, visible: Int) -> CGFloat {
-        CGFloat(min(rows, visible)) * rowHeight
-    }
+    static let deviceListMaxHeight = CGFloat(maxVisibleDevices) * rowHeight
 }
 
 /// A device in MenubarKit's list-row style: the name and a connection

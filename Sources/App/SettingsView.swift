@@ -1,12 +1,14 @@
+import MenubarKit
 import SwiftUI
 import USBBoopKit
 
 struct SettingsView: View {
     @Bindable var model: AppModel
-    private static let gitHubURL = URL(string: "https://github.com/alexcatdad/usb-boop")
 
     var body: some View {
-        Form {
+        // The notification section stays app-specific: the model owns the
+        // permission request and hub/batch rules, which the kit section would bypass.
+        SettingsForm {
             Section("Notifications") {
                 Toggle(
                     "Show quiet connection banners",
@@ -14,15 +16,14 @@ struct SettingsView: View {
                         get: { model.notificationsEnabled },
                         set: { value in Task { await model.setNotificationsEnabled(value) } }
                     ))
-                Text(model.notificationAuthorizationSummary).font(.footnote).foregroundStyle(.secondary)
+                SettingsNote(model.notificationAuthorizationSummary)
                 if model.notificationsEnabled, model.canRequestNotifications {
                     Button("Enable notifications") { Task { await model.setNotificationsEnabled(true) } }
                         .disabled(model.isRequestingNotificationAuthorization)
                 }
                 Toggle("Play a sound", isOn: $model.notificationSoundEnabled)
                     .disabled(!model.notificationsEnabled)
-                Text("Hub connections are silent. Devices connected together share one banner.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                SettingsNote("Hub connections are silent. Devices connected together share one banner.")
             }
             Section("Startup") {
                 Toggle(
@@ -33,9 +34,9 @@ struct SettingsView: View {
                     )
                 )
                 .disabled(model.loginItem.isUpdating || model.loginItem.status == .requiresApproval)
-                Text(model.loginItem.status.summary).font(.footnote).foregroundStyle(.secondary)
+                SettingsNote(model.loginItem.status.summary)
                 if let error = model.loginItem.errorMessage {
-                    Text(error).font(.footnote).foregroundStyle(.secondary)
+                    SettingsNote(error)
                 }
                 if model.loginItem.status == .requiresApproval {
                     Button("Open Login Items Settings") { model.loginItem.openSystemSettings() }
@@ -46,24 +47,12 @@ struct SettingsView: View {
             Section("Display") {
                 Toggle("Pin latest result in menu", isOn: $model.keepLatestResultPinned)
                 Toggle("Show USB hubs", isOn: $model.showHubs)
-                Text("Applies to the device list and recent activity. History is cleared when usb-boop quits.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                SettingsNote("Applies to the device list and recent activity. History is cleared when usb-boop quits.")
             }
-            Section("About") {
-                LabeledContent("Version", value: Self.appVersion)
-                Text("usb-boop reads USB metadata only. It never opens device files or reads or writes your media.")
-                    .font(.footnote).foregroundStyle(.secondary)
-                if let gitHubURL = Self.gitHubURL { Link("View on GitHub", destination: gitHubURL) }
-            }
+            SettingsAboutSection(
+                note: "usb-boop reads USB metadata only. It never opens device files or reads or writes your media.",
+                repository: URL(string: "https://github.com/alexcatdad/usb-boop"))
         }
-        .formStyle(.grouped)
-        .frame(width: 480, height: 560)
         .onAppear { model.becameActive() }
-    }
-
-    private static var appVersion: String {
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
-        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
-        return "\(version) (\(build))"
     }
 }
