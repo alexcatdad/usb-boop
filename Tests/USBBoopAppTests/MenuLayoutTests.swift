@@ -29,9 +29,7 @@ final class MenuLayoutTests: XCTestCase {
         // MenuBarExtra can propose a minimal size instead of the ideal fitting
         // size; the device list must keep its scrolling height even then.
         let minimumSize = controller.sizeThatFits(in: CGSize(width: MenubarMetrics.panelWidth, height: 0))
-        let deviceList = MenuBarContentView.listHeight(
-            rows: devices.count, visible: MenuBarContentView.maxVisibleDevices)
-        XCTAssertEqual(deviceList, CGFloat(MenuBarContentView.maxVisibleDevices) * MenuBarContentView.rowHeight)
+        let deviceList = MenuBarContentView.deviceListMaxHeight
         XCTAssertGreaterThanOrEqual(minimumSize.height, deviceList + 150)
         XCTAssertLessThanOrEqual(size.height, 700)
         XCTAssertEqual(size.width, MenubarMetrics.panelWidth, accuracy: 1)
@@ -91,10 +89,28 @@ final class MenuLayoutTests: XCTestCase {
         XCTAssertEqual(info.first, "Extreme SSD")
         XCTAssertTrue(info.contains("Link speed: 10 Gbps"))
         XCTAssertTrue(info.contains("Manufacturer: SanDisk"))
-        XCTAssertEqual(MenuBarContentView.listHeight(rows: 2, visible: 7), 2 * MenuBarContentView.rowHeight)
+        XCTAssertEqual(MenuBarContentView.deviceListMaxHeight, 7 * MenuBarContentView.rowHeight)
         XCTAssertEqual(USBConnectionSpeed.usb3Gen2.tint, .green)
         XCTAssertEqual(USBConnectionSpeed.usb3Gen1.tint, .blue)
         XCTAssertEqual(USBConnectionSpeed.usb2High.tint, .orange)
         XCTAssertEqual(USBConnectionSpeed.usb1Full.tint, .primary)
+    }
+
+    func test_settingsRendersOnTheSharedForm() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: "MenuLayoutTests.settings.\(UUID().uuidString)"))
+        let model = AppModel(monitor: FixtureUSBMonitor(devices: []), defaults: defaults)
+        let controller = NSHostingController(rootView: SettingsView(model: model))
+        let size = controller.view.fittingSize
+        XCTAssertEqual(size.width, MenubarMetrics.settingsWidth, accuracy: 1)
+        XCTAssertGreaterThan(size.height, 300)
+        controller.view.frame = NSRect(origin: .zero, size: size)
+        controller.view.layoutSubtreeIfNeeded()
+        if let destination = ProcessInfo.processInfo.environment["USB_BOOP_RENDER_ARTIFACTS"] {
+            let view = controller.view
+            let bitmap = try XCTUnwrap(view.bitmapImageRepForCachingDisplay(in: view.bounds))
+            view.cacheDisplay(in: view.bounds, to: bitmap)
+            let png = try XCTUnwrap(bitmap.representation(using: .png, properties: [:]))
+            try png.write(to: URL(fileURLWithPath: destination).appendingPathComponent("usb-boop-settings.png"))
+        }
     }
 }

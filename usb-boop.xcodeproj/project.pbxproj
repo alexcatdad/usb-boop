@@ -898,7 +898,7 @@
 			repositoryURL = "https://github.com/alexcatdad/menubar-kit.git";
 			requirement = {
 				kind = revision;
-				revision = ec879dcd4c33638c90f5f5be0a8cd21c5eb75665;
+				revision = 02c011866c9a0fbb18bce21b2910410f87642860;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

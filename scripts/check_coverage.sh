@@ -11,7 +11,7 @@
 set -euo pipefail
 
 KIT_FLOOR=87
-APP_FLOOR=66
+APP_FLOOR=89
 
 bundle="${1:?usage: check_coverage.sh <result bundle>}"
 
