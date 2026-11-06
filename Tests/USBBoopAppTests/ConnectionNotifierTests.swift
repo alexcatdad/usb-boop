@@ -158,7 +158,7 @@ final class ConnectionNotifierTests: XCTestCase {
             return await notifier.deliver([self.device()])
         }
         let outcome = await delivery.value
-        guard case .failed = outcome else { return XCTFail("Expected a cancelled delivery, got \(String(describing: outcome))") }
+        XCTAssertEqual(outcome, .cancelled)
         XCTAssertTrue(center.addedRequests.isEmpty)
     }
 

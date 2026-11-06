@@ -3,8 +3,10 @@
 # Package the already signed/stapled app from the published ZIP. Layout is
 # written directly into the image; no Finder automation or preferences change.
 set -euo pipefail
-if [[ $# -ne 3 ]]; then
-  echo "usage: $0 <notarized-release.zip> <YYYY.M.N> <output-dir>" >&2
+# shellcheck source=scripts/release_version.sh
+source "$(cd "$(dirname "$0")" && pwd)/release_version.sh"
+if [[ $# -ne 3 ]] || ! apple_version_for "$2" > /dev/null; then
+  echo "usage: $0 <notarized-release.zip> <YYYY.MM.DD.N> <output-dir>" >&2
   exit 1
 fi
 archive="$1"

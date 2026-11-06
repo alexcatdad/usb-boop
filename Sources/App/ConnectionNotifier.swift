@@ -1,8 +1,6 @@
 import Foundation
 import MenubarKit
-import os
 import USBBoopKit
-import UserNotifications
 
 /// What the notification controls show about macOS permission.
 enum NotificationAuthorization: Equatable, Sendable {
@@ -23,23 +21,20 @@ enum NotificationAuthorization: Equatable, Sendable {
 
 /// usb-boop's connection banners, posted through MenubarKit's `MenubarNotifier`.
 ///
-/// `MenubarNotifier` owns opt-in, sound and the permission re-check at delivery.
-/// This type adds the usb-boop mapping (one banner per batch, hubs skipped,
-/// thread `usb-boop.connections`) and two behaviours MenubarKit does not have:
-/// a cancelled delivery never posts, and a failed permission request keeps its reason.
+/// `MenubarNotifier` owns opt-in, sound, the permission re-check at delivery,
+/// cancellation and one-request-at-a-time. This type adds the usb-boop mapping
+/// (one banner per batch, hubs skipped, thread `usb-boop.connections`) and keeps
+/// a failed permission request's reason for the Settings view.
 final class ConnectionNotifier: Sendable {
     static let threadIdentifier = "usb-boop.connections"
 
-    private let center: GuardedNotificationCenter
     private let notifier: MenubarNotifier
 
     init(
         center: any NotificationCenterClient = SystemNotificationCenter(),
         preferences: @escaping @Sendable () -> NotificationPreferences
     ) {
-        let guarded = GuardedNotificationCenter(base: center)
-        self.center = guarded
-        notifier = MenubarNotifier(center: guarded, preferences: preferences)
+        notifier = MenubarNotifier(center: center, preferences: preferences)
     }
 
     /// The current permission. Never prompts.
@@ -49,12 +44,17 @@ final class ConnectionNotifier: Sendable {
 
     /// Call only from the user's toggle or Enable button. Prompts if macOS has not asked yet.
     func requestAuthorization() async -> NotificationAuthorization {
-        center.clearRequestFailure()
-        let permission = await notifier.userEnabledNotifications()
-        if permission == .denied, let failure = center.clearRequestFailure() {
-            return .failed(failure)
+        do {
+            return NotificationAuthorization(try await notifier.requestPermission())
+        } catch PermissionRequestError.alreadyInProgress {
+            return await authorization()
+        } catch {
+            let failure = error as NSError
+            USBBoopLog.appModel.error(
+                "Notification authorization failed: \(failure.domain, privacy: .public) code \(failure.code)"
+            )
+            return .failed(error.localizedDescription)
         }
-        return NotificationAuthorization(permission)
     }
 
     /// Posts one banner for `devices`, unless they are all hubs, the toggle is off,
@@ -63,7 +63,7 @@ final class ConnectionNotifier: Sendable {
     func deliver(_ devices: [USBDevice]) async -> DeliveryOutcome? {
         guard let notification = Self.notification(for: devices) else { return nil }
         let outcome = await notifier.deliver(notification)
-        if case .failed(let reason) = outcome, !Task.isCancelled {
+        if case .failed(let reason) = outcome, outcome != .cancelled {
             USBBoopLog.appModel.error("Failed to deliver notification: \(reason, privacy: .public)")
         }
         return outcome
@@ -81,47 +81,5 @@ final class ConnectionNotifier: Sendable {
             threadIdentifier: threadIdentifier,
             identifier: identifier
         )
-    }
-}
-
-/// Wraps the notification center to refuse posting from a cancelled task (a device
-/// disconnected, or notifications were turned off, while permission was being checked)
-/// and to remember why a permission request threw.
-private final class GuardedNotificationCenter: NotificationCenterClient {
-    private let base: any NotificationCenterClient
-    private let requestFailure = OSAllocatedUnfairLock<String?>(initialState: nil)
-
-    init(base: any NotificationCenterClient) {
-        self.base = base
-    }
-
-    @discardableResult
-    func clearRequestFailure() -> String? {
-        requestFailure.withLock { failure in
-            defer { failure = nil }
-            return failure
-        }
-    }
-
-    func requestAuthorization() async throws -> Bool {
-        do {
-            return try await base.requestAuthorization()
-        } catch {
-            let failure = error as NSError
-            USBBoopLog.appModel.error(
-                "Notification authorization failed: \(failure.domain, privacy: .public) code \(failure.code)"
-            )
-            requestFailure.withLock { $0 = error.localizedDescription }
-            throw error
-        }
-    }
-
-    func authorizationStatus() async -> UNAuthorizationStatus {
-        await base.authorizationStatus()
-    }
-
-    func add(_ notification: MenubarNotification, playSound: Bool) async throws {
-        try Task.checkCancellation()
-        try await base.add(notification, playSound: playSound)
     }
 }
