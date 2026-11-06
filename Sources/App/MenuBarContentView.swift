@@ -9,8 +9,8 @@ struct MenuBarContentView: View {
 
     /// Height of one device row; the list shows up to `maxVisibleDevices`
     /// rows before it scrolls.
-    static let rowHeight: CGFloat = 40
-    static let maxVisibleDevices = 7
+    static let rowHeight: CGFloat = 28
+    static let maxVisibleDevices = 9
     static let recentActivityCount = 3
 
     var body: some View {
@@ -57,7 +57,7 @@ struct MenuBarContentView: View {
             } else {
                 BoundedScrollView(maxHeight: Self.deviceListMaxHeight) {
                     VStack(alignment: .leading, spacing: 0) {
-                        ForEach(model.visibleDevices) { DeviceRow(device: $0, subtitle: $0.connectionSummary) }
+                        ForEach(model.visibleDevices) { DeviceRow(device: $0) }
                     }
                 }
             }
@@ -90,32 +90,36 @@ struct MenuBarContentView: View {
     static let deviceListMaxHeight = CGFloat(maxVisibleDevices) * rowHeight
 }
 
-/// A device in MenubarKit's list-row style: the name and a connection
-/// subtitle, with the negotiated link speed as the row's prominent trailing
-/// value (AGENTS.md: speed is the visually prominent element). Clicking
-/// copies the device info.
+/// A device row shaped like MenubarKit's status rows: the name and the
+/// negotiated link speed on one line, the speed tinted by tier so it stays the
+/// prominent value (AGENTS.md). The connection time moves to the hover text,
+/// except in the "Latest connection" tile, which shows it as a subtitle.
+/// Clicking copies the device info.
 private struct DeviceRow: View {
     let device: USBDevice
-    let subtitle: String
+    var subtitle: String?
 
     var body: some View {
         Button(action: copyDeviceInfo) {
             HStack(spacing: 8) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(device.name).font(.callout).lineLimit(1)
-                    Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    Text(device.name).lineLimit(1).truncationMode(.tail)
+                    if let subtitle {
+                        Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    }
                 }
                 Spacer(minLength: 8)
                 Text(device.speed.displayLabel)
-                    .font(.body.weight(.semibold).monospacedDigit())
+                    .fontWeight(.semibold).monospacedDigit()
                     .foregroundStyle(device.speed.tint)
                     .lineLimit(1)
             }
+            .font(.callout)
         }
-        .buttonStyle(ListRowButtonStyle())
-        .help("Copy info for \(device.name)")
+        .buttonStyle(CompactRowButtonStyle(minHeight: subtitle == nil ? MenuBarContentView.rowHeight : 36))
+        .help("\(device.connectionSummary). Click to copy device info.")
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(device.name), \(device.linkSpeedSummary), \(subtitle)")
+        .accessibilityLabel("\(device.name), \(device.linkSpeedSummary), \(subtitle ?? device.connectionSummary)")
         .accessibilityHint("Copies the device info")
         .contextMenu { Button("Copy Device Info", action: copyDeviceInfo) }
     }
@@ -123,6 +127,36 @@ private struct DeviceRow: View {
     private func copyDeviceInfo() {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(device.copyableInfo, forType: .string)
+    }
+}
+
+/// `ListRowButtonStyle`'s hover highlight at status-row height, so a device
+/// list reads like the status tiles in the other apps.
+private struct CompactRowButtonStyle: ButtonStyle {
+    let minHeight: CGFloat
+
+    func makeBody(configuration: Configuration) -> some View {
+        CompactRowBody(configuration: configuration, minHeight: minHeight)
+    }
+}
+
+private struct CompactRowBody: View {
+    let configuration: ButtonStyleConfiguration
+    let minHeight: CGFloat
+    @State private var hovering = false
+
+    var body: some View {
+        configuration.label
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 8)
+            .frame(minHeight: minHeight)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(.primary.opacity(configuration.isPressed ? 0.12 : hovering ? 0.07 : 0))
+            )
+            .padding(.horizontal, 4)
+            .contentShape(Rectangle())
+            .onHover { hovering = $0 }
     }
 }
 
