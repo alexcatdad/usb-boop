@@ -10,9 +10,11 @@ config outside the checkout (`~/.config/release-tools/config.json`, see
 release-tools `docs/consumer.md`). Machine-specific names are never committed.
 
 [`release.json`](../release.json) declares the targets and signing; the
-[`Taskfile.yml`](../Taskfile.yml) pins `reltool` (release-tools `v0.1.0`, by tag
-and commit) and exposes the entry points. Run them from a clean, reviewed commit
-with release-tools checked out next to this repository:
+[`Taskfile.yml`](../Taskfile.yml) pins `reltool` (release-tools, by tag and commit)
+and exposes the entry points. Run them from a clean, reviewed commit. The first
+run builds `reltool` from a release-tools checkout, by default
+`../../../infrastructure/release-tools` (the `alexcatdad/infrastructure` layout);
+set `RELTOOL_SRC=<path>` when it lives elsewhere:
 
 ```sh
 task release:check     # read-only; prints the commit and the next version

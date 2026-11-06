@@ -7,7 +7,8 @@ version: "3"
 vars:
   RELTOOL_TAG: v0.3.0
   RELTOOL_COMMIT: 8d84a474ef7a6b48552ca70b5f78ebd0e8295407 # commit of RELTOOL_TAG
-  RELTOOL_SRC: ../release-tools
+  # Override with RELTOOL_SRC=<path> when release-tools is checked out elsewhere.
+  RELTOOL_SRC: '{{.RELTOOL_SRC | default "../../../infrastructure/release-tools"}}'
   RELTOOL:
     sh: echo "${XDG_CACHE_HOME:-$HOME/.cache}/release-tools/{{.RELTOOL_COMMIT}}/reltool"
 
@@ -104,6 +105,11 @@ tasks:
     status:
       - test -x "{{.RELTOOL}}"
     cmds:
+      # In cmds, not preconditions: an already-built reltool needs no checkout.
+      - >-
+        test -e "{{.RELTOOL_SRC}}/.git" || {
+        echo "reltool: no release-tools checkout at {{.RELTOOL_SRC}}; clone alexcatdad/release-tools there or set RELTOOL_SRC=<path>" >&2;
+        exit 1; }
       - git -C "{{.RELTOOL_SRC}}" show "{{.RELTOOL_COMMIT}}:scripts/install-reltool.sh" | sh -s -- "{{.RELTOOL_SRC}}" "{{.RELTOOL_TAG}}" "{{.RELTOOL_COMMIT}}"
 
   release:check:
