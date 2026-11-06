@@ -66,7 +66,8 @@ struct USBRegistryDeviceReader {
         let rawSpeed = (properties[usbSpeedKey] as? NSNumber)?.intValue
         return USBDevice(
             id: id,
-            name: resolvedName(productName: productName, vendorName: vendorName, vendorID: vendorID, productID: productID),
+            name: resolvedName(
+                productName: productName, vendorName: vendorName, vendorID: vendorID, productID: productID),
             manufacturer: vendorName, vendorID: vendorID, productID: productID,
             serialNumber: sanitize(properties[usbSerialNumberStringKey] as? String),
             locationID: (properties[usbLocationIDKey] as? NSNumber)?.uint32Value,

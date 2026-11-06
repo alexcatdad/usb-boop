@@ -1,13 +1,16 @@
 import MenubarKit
-@testable import USBBoopKit
 import XCTest
+
+@testable import USBBoopKit
 
 @MainActor
 final class MenubarStatusMappingTests: XCTestCase {
     func test_healthyMonitoringIsOKAndCountsDevices() {
-        XCTAssertEqual(MenubarStatus.usbBoop(.monitoring, deviceCount: 0),
-                       MenubarStatus(tone: .ok, word: "Monitoring", headline: "Monitoring USB",
-                                     detail: "No USB devices connected"))
+        XCTAssertEqual(
+            MenubarStatus.usbBoop(.monitoring, deviceCount: 0),
+            MenubarStatus(
+                tone: .ok, word: "Monitoring", headline: "Monitoring USB",
+                detail: "No USB devices connected"))
         XCTAssertEqual(MenubarStatus.usbBoop(.monitoring, deviceCount: 1).detail, "1 device connected")
         XCTAssertEqual(MenubarStatus.usbBoop(.monitoring, deviceCount: 3).detail, "3 devices connected")
         XCTAssertFalse(MenubarStatus.usbBoop(.starting, deviceCount: 0).tone.needsAttention)
@@ -29,8 +32,9 @@ final class MenubarStatusMappingTests: XCTestCase {
 
     func test_trayVoiceOverLabelNamesAppAndStatus() {
         let status = MenubarStatus.usbBoop(.unavailable(.registrationFailed), deviceCount: 0)
-        XCTAssertEqual(TrayAccessibility.label(appName: "usb-boop", statusWord: status.word),
-                       "usb-boop, Monitoring unavailable")
+        XCTAssertEqual(
+            TrayAccessibility.label(appName: "usb-boop", statusWord: status.word),
+            "usb-boop, Monitoring unavailable")
     }
 
     func test_modelStatusCountsOnlyVisibleDevices() {

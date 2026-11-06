@@ -169,7 +169,8 @@ enum USBDeviceMerger {
             id: device.id, name: device.name,
             manufacturer: device.manufacturer ?? existing.manufacturer,
             vendorID: device.vendorID ?? existing.vendorID, productID: device.productID ?? existing.productID,
-            serialNumber: device.serialNumber ?? existing.serialNumber, locationID: device.locationID ?? existing.locationID,
+            serialNumber: device.serialNumber ?? existing.serialNumber,
+            locationID: device.locationID ?? existing.locationID,
             speed: device.speed, isHub: device.isHub, firstSeenAt: existing.firstSeenAt,
             connectedAt: existing.connectedAt, rawRegistrySpeed: device.rawRegistrySpeed
         )

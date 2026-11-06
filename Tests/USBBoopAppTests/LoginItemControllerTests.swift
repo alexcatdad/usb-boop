@@ -84,9 +84,11 @@ final class LoginItemControllerTests: XCTestCase {
 
     func testRegistrationFailureKeepsActualStatusAndExposesError() async throws {
         let service = TestLoginItemService()
-        service.registerError = NSError(domain: "LoginItemTests", code: 1, userInfo: [
-            NSLocalizedDescriptionKey: "Registration denied"
-        ])
+        service.registerError = NSError(
+            domain: "LoginItemTests", code: 1,
+            userInfo: [
+                NSLocalizedDescriptionKey: "Registration denied"
+            ])
         let controller = LoginItemController(service: service)
         await controller.setEnabled(true)
         controller.refresh()
@@ -104,9 +106,11 @@ final class LoginItemControllerTests: XCTestCase {
     func testUnregistrationFailureKeepsActualStatusAndExposesError() async throws {
         let service = TestLoginItemService()
         service.status = .enabled
-        service.unregisterError = NSError(domain: "LoginItemTests", code: 2, userInfo: [
-            NSLocalizedDescriptionKey: "Removal failed"
-        ])
+        service.unregisterError = NSError(
+            domain: "LoginItemTests", code: 2,
+            userInfo: [
+                NSLocalizedDescriptionKey: "Removal failed"
+            ])
         let controller = LoginItemController(service: service)
         await controller.setEnabled(false)
         XCTAssertTrue(controller.isEnabled)

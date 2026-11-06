@@ -1,5 +1,6 @@
-@testable import USBBoopKit
 import XCTest
+
+@testable import USBBoopKit
 
 final class USBRegistryDeviceReaderTests: XCTestCase {
     private let reader = USBRegistryDeviceReader()

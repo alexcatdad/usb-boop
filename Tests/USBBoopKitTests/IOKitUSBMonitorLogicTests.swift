@@ -1,5 +1,6 @@
-@testable import USBBoopKit
 import XCTest
+
+@testable import USBBoopKit
 
 final class USBDeviceMergerTests: XCTestCase {
 
@@ -106,8 +107,9 @@ final class USBDeviceMergerTests: XCTestCase {
         locationID: UInt32? = nil, speed: USBConnectionSpeed = .usb3Gen1,
         isHub: Bool = false, connectedAt: Date = .now
     ) -> USBDevice {
-        USBDevice(id: id, name: name, manufacturer: manufacturer, vendorID: vendorID,
-                  productID: productID, serialNumber: serialNumber, locationID: locationID,
-                  speed: speed, isHub: isHub, connectedAt: connectedAt)
+        USBDevice(
+            id: id, name: name, manufacturer: manufacturer, vendorID: vendorID,
+            productID: productID, serialNumber: serialNumber, locationID: locationID,
+            speed: speed, isHub: isHub, connectedAt: connectedAt)
     }
 }

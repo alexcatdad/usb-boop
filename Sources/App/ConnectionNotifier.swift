@@ -71,7 +71,8 @@ final class ConnectionNotifier: Sendable {
 
     /// The banner for devices connected together, or `nil` when every device is a hub.
     static func notification(for devices: [USBDevice], identifier: String = "usb-boop.\(UUID().uuidString)")
-        -> MenubarNotification? {
+        -> MenubarNotification?
+    {
         let eligible = devices.filter { !$0.isHub }
         guard let first = eligible.first else { return nil }
         let single = eligible.count == 1

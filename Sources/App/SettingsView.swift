@@ -8,10 +8,12 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Notifications") {
-                Toggle("Show quiet connection banners", isOn: Binding(
-                    get: { model.notificationsEnabled },
-                    set: { value in Task { await model.setNotificationsEnabled(value) } }
-                ))
+                Toggle(
+                    "Show quiet connection banners",
+                    isOn: Binding(
+                        get: { model.notificationsEnabled },
+                        set: { value in Task { await model.setNotificationsEnabled(value) } }
+                    ))
                 Text(model.notificationAuthorizationSummary).font(.footnote).foregroundStyle(.secondary)
                 if model.notificationsEnabled, model.canRequestNotifications {
                     Button("Enable notifications") { Task { await model.setNotificationsEnabled(true) } }
@@ -23,10 +25,13 @@ struct SettingsView: View {
                     .font(.footnote).foregroundStyle(.secondary)
             }
             Section("Startup") {
-                Toggle("Launch at login", isOn: Binding(
-                    get: { model.loginItem.isEnabled },
-                    set: { value in Task { await model.loginItem.setEnabled(value) } }
-                ))
+                Toggle(
+                    "Launch at login",
+                    isOn: Binding(
+                        get: { model.loginItem.isEnabled },
+                        set: { value in Task { await model.loginItem.setEnabled(value) } }
+                    )
+                )
                 .disabled(model.loginItem.isUpdating || model.loginItem.status == .requiresApproval)
                 Text(model.loginItem.status.summary).font(.footnote).foregroundStyle(.secondary)
                 if let error = model.loginItem.errorMessage {

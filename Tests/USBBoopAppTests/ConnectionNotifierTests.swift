@@ -1,7 +1,8 @@
 import MenubarKit
-@testable import USBBoopKit
 import UserNotifications
 import XCTest
+
+@testable import USBBoopKit
 
 /// Preferences a test can flip between deliveries, as the Settings toggles would.
 private final class TestPreferences: @unchecked Sendable {
@@ -98,8 +99,9 @@ final class ConnectionNotifierTests: XCTestCase {
         preferences.value.soundEnabled = false
         await notifier.deliver([device()])
         XCTAssertEqual(center.addedRequests.map(\.playSound), [true, false])
-        XCTAssertNotEqual(center.addedRequests[0].notification.identifier,
-                          center.addedRequests[1].notification.identifier)
+        XCTAssertNotEqual(
+            center.addedRequests[0].notification.identifier,
+            center.addedRequests[1].notification.identifier)
     }
 
     func test_toggleOffIsReadAtDelivery() async {
@@ -112,11 +114,14 @@ final class ConnectionNotifierTests: XCTestCase {
     }
 
     func test_groupedNotificationIncludesCountAndMenuHintAndExcludesHubs() throws {
-        let notification = try XCTUnwrap(ConnectionNotifier.notification(
-            for: [device(), device(id: 43), device(id: 44, isHub: true)], identifier: "fixed"))
-        XCTAssertEqual(notification, MenubarNotification(
-            title: "2 USB devices connected", body: "Open usb-boop for link speeds.",
-            threadIdentifier: "usb-boop.connections", identifier: "fixed"))
+        let notification = try XCTUnwrap(
+            ConnectionNotifier.notification(
+                for: [device(), device(id: 43), device(id: 44, isHub: true)], identifier: "fixed"))
+        XCTAssertEqual(
+            notification,
+            MenubarNotification(
+                title: "2 USB devices connected", body: "Open usb-boop for link speeds.",
+                threadIdentifier: "usb-boop.connections", identifier: "fixed"))
     }
 
     func test_hubsAndEmptyBatchesDoNotNotifyOrQueryAuthorization() async {

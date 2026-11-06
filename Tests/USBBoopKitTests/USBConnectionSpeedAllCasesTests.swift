@@ -1,5 +1,6 @@
-@testable import USBBoopKit
 import XCTest
+
+@testable import USBBoopKit
 
 final class USBConnectionSpeedAllCasesTests: XCTestCase {
 
@@ -27,7 +28,7 @@ final class USBConnectionSpeedAllCasesTests: XCTestCase {
 
     func test_registryValue_roundTrip() {
         // Map of registry values to expected case and displayLabel.
-        let registryValues =  [2, 1, 3, 4, 5, 6]
+        let registryValues = [2, 1, 3, 4, 5, 6]
         let expectedCases: [USBConnectionSpeed] = [
             .usb1Low, .usb1Full, .usb2High, .usb3Gen1, .usb3Gen2, .usb3Gen2x2,
         ]

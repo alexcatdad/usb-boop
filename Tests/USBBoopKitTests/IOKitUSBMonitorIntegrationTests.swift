@@ -1,5 +1,6 @@
-@testable import USBBoopKit
 import XCTest
+
+@testable import USBBoopKit
 
 @MainActor
 final class IOKitUSBMonitorIntegrationTests: XCTestCase {
@@ -39,7 +40,7 @@ final class IOKitUSBMonitorIntegrationTests: XCTestCase {
         monitor.onDevicesChanged = { _ in snapshotCount += 1 }
 
         monitor.start()
-        monitor.start() // second call should be ignored
+        monitor.start()  // second call should be ignored
 
         try await Task.sleep(for: .milliseconds(200))
         monitor.stop()
@@ -69,7 +70,7 @@ final class IOKitUSBMonitorIntegrationTests: XCTestCase {
         let monitor = IOKitUSBMonitor()
         monitor.start()
         monitor.stop()
-        monitor.stop() // should not crash
+        monitor.stop()  // should not crash
     }
 
     func test_devices_haveValidProperties() async throws {

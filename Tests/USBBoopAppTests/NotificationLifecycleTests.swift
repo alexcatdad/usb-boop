@@ -1,7 +1,8 @@
 import MenubarKit
-@testable import USBBoopKit
 import UserNotifications
 import XCTest
+
+@testable import USBBoopKit
 
 @MainActor
 private final class SuspendedNotificationCenter: NotificationCenterClient {
@@ -45,7 +46,8 @@ final class NotificationLifecycleTests: XCTestCase {
         old.status = .denied
         let new = SuspendedNotificationCenter()
         let selection = NotificationCenterSelection(old)
-        let model = AppModel(monitor: FixtureUSBMonitor(devices: []), makeNotificationCenter: { selection.center }, defaults: defaults())
+        let model = AppModel(
+            monitor: FixtureUSBMonitor(devices: []), makeNotificationCenter: { selection.center }, defaults: defaults())
         model.start()
         await model.refreshAuthorization()
         let entered = expectation(description: "old settings check suspended")
@@ -68,8 +70,9 @@ final class NotificationLifecycleTests: XCTestCase {
         for action in ["detach", "disable", "stop"] {
             let center = SuspendedNotificationCenter()
             let monitor = FixtureUSBMonitor(devices: [])
-            let model = AppModel(monitor: monitor, makeNotificationCenter: { center },
-                                 defaults: defaults(), alertWait: { })
+            let model = AppModel(
+                monitor: monitor, makeNotificationCenter: { center },
+                defaults: defaults(), alertWait: {})
             model.start()
             await model.refreshAuthorization()
             await model.setNotificationsEnabled(true)

@@ -6,7 +6,7 @@ invariants, layout and checks, for people and agents alike.
 ## Setup
 
 ```sh
-brew install go-task xcodegen swiftlint
+brew install go-task xcodegen actionlint shellcheck
 task check
 ```
 

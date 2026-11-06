@@ -129,7 +129,7 @@ final class IOKitUSBRegistry: USBRegistryAccess {
     }
 
     private func registrationFailure(_ result: kern_return_t) -> USBMonitoringIssue {
-        stop() // Both registrations are one unit; release a partially installed pair.
+        stop()  // Both registrations are one unit; release a partially installed pair.
         return issue(for: result, fallback: .registrationFailed)
     }
 

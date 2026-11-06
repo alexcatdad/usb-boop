@@ -1,7 +1,8 @@
 import MenubarKit
-@testable import USBBoopKit
 import UserNotifications
 import XCTest
+
+@testable import USBBoopKit
 
 @MainActor
 final class AppTestMockCenter: NotificationCenterClient {
@@ -33,10 +34,11 @@ final class AppModelTests: XCTestCase {
         monitor: FixtureUSBMonitor = FixtureUSBMonitor(devices: []),
         center: AppTestMockCenter = AppTestMockCenter(),
         defaults: UserDefaults? = nil,
-        wait: @escaping ConnectionAlertBatcher.Wait = { }
+        wait: @escaping ConnectionAlertBatcher.Wait = {}
     ) -> AppModel {
-        AppModel(monitor: monitor, makeNotificationCenter: { center },
-                 defaults: defaults ?? self.defaults(), alertWait: wait)
+        AppModel(
+            monitor: monitor, makeNotificationCenter: { center },
+            defaults: defaults ?? self.defaults(), alertWait: wait)
     }
 
     func test_newInstallStartsQuietAndRestoresExistingPreferences() async {
@@ -123,9 +125,11 @@ final class AppModelTests: XCTestCase {
         var release: CheckedContinuation<Void, Never>?
         let monitor = FixtureUSBMonitor(devices: [])
         let center = AppTestMockCenter()
-        let model = makeModel(monitor: monitor, center: center, wait: {
-            await withCheckedContinuation { release = $0 }
-        })
+        let model = makeModel(
+            monitor: monitor, center: center,
+            wait: {
+                await withCheckedContinuation { release = $0 }
+            })
         model.start()
         await model.setNotificationsEnabled(true)
         let device = USBDevice(id: 1, name: "Device", speed: .usb3Gen1)
@@ -144,9 +148,11 @@ final class AppModelTests: XCTestCase {
         var release: CheckedContinuation<Void, Never>?
         let monitor = FixtureUSBMonitor(devices: [])
         let center = AppTestMockCenter()
-        let model = makeModel(monitor: monitor, center: center, wait: {
-            await withCheckedContinuation { release = $0 }
-        })
+        let model = makeModel(
+            monitor: monitor, center: center,
+            wait: {
+                await withCheckedContinuation { release = $0 }
+            })
         model.start()
         await model.setNotificationsEnabled(true)
         monitor.onDeviceAttached?(USBDevice(id: 1, name: "Device", speed: .usb3Gen1))
@@ -175,10 +181,13 @@ final class AppModelTests: XCTestCase {
         let store = defaults()
         let model = makeModel(monitor: monitor, defaults: store)
         for index in 0..<55 {
-            let device = USBDevice(id: UInt64(index), name: "Device \(index)", serialNumber: "private",
-                                   speed: .usb3Gen1, isHub: index == 54)
-            monitor.onObservation?(USBObservation(kind: .attached, device: device,
-                                                  observedAt: Date(timeIntervalSince1970: Double(index))))
+            let device = USBDevice(
+                id: UInt64(index), name: "Device \(index)", serialNumber: "private",
+                speed: .usb3Gen1, isHub: index == 54)
+            monitor.onObservation?(
+                USBObservation(
+                    kind: .attached, device: device,
+                    observedAt: Date(timeIntervalSince1970: Double(index))))
         }
         XCTAssertEqual(model.history.count, 50)
         XCTAssertEqual(model.history.first?.device.id, 54)

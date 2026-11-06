@@ -50,7 +50,7 @@ the Developer ID signature or notarization.
 
 ## Automated Checks
 
-Every pull request runs a secret scan, dependency review, SwiftLint, a build,
+Every pull request runs a secret scan, dependency review, swift-format, actionlint, ShellCheck, a build,
 and CodeQL through `alexcatdad/ci-actions`; `main` also runs the full tests and
 `task security`, and CodeQL and the security checks rerun weekly. All GitHub
 Actions are pinned to full commit SHAs. See

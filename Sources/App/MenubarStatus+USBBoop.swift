@@ -7,19 +7,23 @@ extension MenubarStatus {
     static func usbBoop(_ monitoring: USBMonitoringStatus, deviceCount: Int) -> MenubarStatus {
         switch monitoring {
         case .monitoring:
-            MenubarStatus(tone: .ok, word: "Monitoring", headline: "Monitoring USB",
-                          detail: deviceSummary(deviceCount))
+            MenubarStatus(
+                tone: .ok, word: "Monitoring", headline: "Monitoring USB",
+                detail: deviceSummary(deviceCount))
         case .starting:
             MenubarStatus(tone: .ok, word: "Starting", headline: "Starting USB monitoring…")
         case .degraded(let issue):
-            MenubarStatus(tone: .warning, word: "Results may be incomplete",
-                          headline: "Results may be incomplete", detail: issue.message)
+            MenubarStatus(
+                tone: .warning, word: "Results may be incomplete",
+                headline: "Results may be incomplete", detail: issue.message)
         case .unavailable(let issue):
-            MenubarStatus(tone: .error, word: "Monitoring unavailable",
-                          headline: "USB monitoring unavailable", detail: issue.message)
+            MenubarStatus(
+                tone: .error, word: "Monitoring unavailable",
+                headline: "USB monitoring unavailable", detail: issue.message)
         case .stopped:
-            MenubarStatus(tone: .off, word: "Stopped", headline: "USB monitoring stopped",
-                          detail: monitoring.message)
+            MenubarStatus(
+                tone: .off, word: "Stopped", headline: "USB monitoring stopped",
+                detail: monitoring.message)
         }
     }
 
