@@ -23,20 +23,28 @@ good; pure Swift, no backend.
 - Keep `PrivacyInfo.xcprivacy` current with any new API usage.
 - No third-party dependencies. First-party `alexcatdad/menubar-kit` is allowed,
   pinned by revision (`.revision("<full sha>")`; four-part CalVer tags don't
-  resolve in SwiftPM). SwiftLint and XcodeGen are build-time tools only. The DMG
+  resolve in SwiftPM). XcodeGen, actionlint and ShellCheck are build-time tools only; swift-format ships with the toolchain. The DMG
   layout uses hash-pinned `ds-store` and `mac-alias` in an isolated Python
   environment; packaging tools never ship inside the app or installer.
 
 ### Swift
 
-- Swift 6 strict concurrency. All `@MainActor` isolation is explicit.
-- Never use `@unchecked Sendable` without a comment explaining why it is safe.
-- No force unwrapping (`!`) outside tests.
-- `swiftlint --strict` must pass with zero warnings.
+- `swift format lint --strict` must pass (config in `.swift-format`, shared with
+  menubar-kit); `task format` rewrites in place.
+- Warnings are errors: `SWIFT_TREAT_WARNINGS_AS_ERRORS: YES` stays in
+  `project.yml` `settings.base` (project-wide, not on the xcodebuild command
+  line, where it collides with the MenubarKit package's `-suppress-warnings`).
+- Review rules swift-format cannot check:
+  - Swift 6 strict concurrency. All `@MainActor` isolation is explicit.
+  - Never use `@unchecked Sendable` without a comment explaining why it is safe.
+  - No force unwrapping (`!`) or implicitly unwrapped optionals outside tests.
 
 ### Testing
 
 - All new logic has tests. Target 85%+ on testable code.
+- `task test` enforces line-coverage floors (`scripts/check_coverage.sh`) for
+  `USBBoopKit` and the `Sources/App` code exercised by `USBBoopAppTests`. Raise
+  a floor when coverage grows; never lower one to make a change pass.
 - Unit tests use `FixtureUSBMonitor` and `MockNotificationCenter`, not real
   system APIs.
 - IOKit integration tests are fine but must not assert on specific device counts
@@ -63,17 +71,18 @@ good; pure Swift, no backend.
 ## Build & verify
 
 ```sh
-brew install go-task xcodegen swiftlint
+brew install go-task xcodegen actionlint shellcheck
 task check
 ```
 
 - `task check` — the full local gate: lint, build, tests, security checks. CI runs the same tasks.
 - `task lint`, `task build`, `task test`, `task security` — what CI calls
-  (`alexcatdad/ci-actions` validate-pr/validate-main). `task lint` also runs
-  actionlint and shellcheck when installed.
+  (`alexcatdad/ci-actions` validate-pr/validate-main). `task lint` runs
+  swift-format, actionlint and shellcheck, all required; CI installs pinned
+  actionlint and shellcheck with `scripts/ci_setup.sh`.
 - `task cask:lint` — generates the cask with `scripts/update_homebrew_tap.sh`
   and runs `brew style`/`brew info` on it in a throwaway tap. CI runs it too.
-- Toolchain: Swift 6 on Xcode for macOS 26 (CI selects Xcode 26.6 on `macos-26`), Task, XcodeGen, SwiftLint.
+- Toolchain: Swift 6 on Xcode for macOS 26 (CI selects Xcode 26.6 on `macos-26`), Task, XcodeGen, actionlint, ShellCheck.
 
 ## Release
 

@@ -1,5 +1,6 @@
-@testable import USBBoopKit
 import XCTest
+
+@testable import USBBoopKit
 
 final class USBConnectionSpeedTests: XCTestCase {
     func testRegistryMappingCoversExpectedUSBSpeeds() {
@@ -34,7 +35,7 @@ final class USBConnectionSpeedTests: XCTestCase {
         }
     }
 
-func testRegistryValueNilMapsToUnknown() {
+    func testRegistryValueNilMapsToUnknown() {
         XCTAssertEqual(USBConnectionSpeed(registryValue: nil), .unknown)
     }
 

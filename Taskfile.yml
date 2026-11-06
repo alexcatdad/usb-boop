@@ -22,11 +22,25 @@ tasks:
       - task: security
 
   lint:
-    desc: SwiftLint (strict), plus actionlint and shellcheck when installed.
+    desc: swift-format (strict), actionlint and shellcheck; all three are required.
     cmds:
-      - swiftlint --strict
-      - if command -v actionlint >/dev/null; then actionlint; fi
-      - if command -v shellcheck >/dev/null; then shellcheck --severity=style scripts/*.sh; fi
+      - swift format lint --strict --recursive Sources Tests
+      - actionlint
+      - shellcheck --severity=style scripts/*.sh
+
+  format:
+    desc: Rewrite Sources and Tests with swift-format.
+    cmds:
+      - swift format format --in-place --recursive Sources Tests
+
+  warnings-as-errors:
+    internal: true
+    # Set project-wide in project.yml rather than on the xcodebuild command
+    # line: a command-line override also reaches the MenubarKit package, whose
+    # -suppress-warnings conflicts with -warnings-as-errors.
+    preconditions:
+      - sh: "grep -Eq '^    SWIFT_TREAT_WARNINGS_AS_ERRORS: YES$' project.yml"
+        msg: project.yml must set SWIFT_TREAT_WARNINGS_AS_ERRORS to YES in settings.base
 
   generate:
     internal: true
@@ -35,8 +49,8 @@ tasks:
       - xcodegen generate
 
   build:
-    desc: Generate the Xcode project and build the app (unsigned).
-    deps: [generate]
+    desc: Generate the Xcode project and build the app (unsigned, warnings as errors).
+    deps: [generate, warnings-as-errors]
     cmds:
       - >-
         xcodebuild
@@ -47,16 +61,22 @@ tasks:
         build
 
   test:
-    desc: Run the unit and IOKit integration tests (unsigned).
-    deps: [generate]
+    desc: Run the unit and IOKit integration tests (unsigned) and enforce the coverage floors.
+    deps: [generate, warnings-as-errors]
+    vars:
+      RESULT_BUNDLE: build/TestResults.xcresult
     cmds:
+      - rm -rf {{.RESULT_BUNDLE}}
       - >-
         xcodebuild
         -project usb-boop.xcodeproj
         -scheme usb-boop
         -destination 'platform=macOS,arch=arm64'
+        -enableCodeCoverage YES
+        -resultBundlePath {{.RESULT_BUNDLE}}
         CODE_SIGNING_ALLOWED=NO
         test
+      - ./scripts/check_coverage.sh {{.RESULT_BUNDLE}}
 
   security:
     desc: Check the sandbox, USB entitlement and Hardened Runtime invariants.

@@ -199,7 +199,8 @@ final class AppModel {
         latestConnectedDevice = device
         guard alertedConnections.insert(device.id).inserted else { return }
         guard hasStarted, notificationsEnabled, !device.isHub,
-              notificationAuthorization == .authorized else { return }
+            notificationAuthorization == .authorized
+        else { return }
         alertBatcher.enqueue(device)
     }
 }

@@ -1,5 +1,6 @@
-@testable import USBBoopKit
 import XCTest
+
+@testable import USBBoopKit
 
 @MainActor
 final class ConnectionAlertBatcherTests: XCTestCase {
@@ -7,10 +8,11 @@ final class ConnectionAlertBatcherTests: XCTestCase {
         var release: CheckedContinuation<Void, Never>?
         var waits = 0
         var batches: [[USBDevice]] = []
-        let batcher = ConnectionAlertBatcher(wait: {
-            waits += 1
-            await withCheckedContinuation { release = $0 }
-        }, deliver: { batches.append($0) })
+        let batcher = ConnectionAlertBatcher(
+            wait: {
+                waits += 1
+                await withCheckedContinuation { release = $0 }
+            }, deliver: { batches.append($0) })
         let first = USBDevice(id: 1, name: "First", speed: .usb3Gen1)
         batcher.enqueue(first)
         await Task.yield()
@@ -27,9 +29,10 @@ final class ConnectionAlertBatcherTests: XCTestCase {
     func test_cancelAndDetachDiscardPendingAlerts() async {
         var release: CheckedContinuation<Void, Never>?
         var batches: [[USBDevice]] = []
-        let batcher = ConnectionAlertBatcher(wait: {
-            await withCheckedContinuation { release = $0 }
-        }, deliver: { batches.append($0) })
+        let batcher = ConnectionAlertBatcher(
+            wait: {
+                await withCheckedContinuation { release = $0 }
+            }, deliver: { batches.append($0) })
         batcher.enqueue(USBDevice(id: 1, name: "First", speed: .usb3Gen1))
         await Task.yield()
         batcher.remove(1)

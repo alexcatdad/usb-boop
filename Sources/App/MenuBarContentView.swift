@@ -115,10 +115,13 @@ struct MenuBarContentView: View {
 
     private var notificationControls: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Toggle("Notifications", isOn: Binding(
-                get: { model.notificationsEnabled },
-                set: { value in Task { await model.setNotificationsEnabled(value) } }
-            ))
+            Toggle(
+                "Notifications",
+                isOn: Binding(
+                    get: { model.notificationsEnabled },
+                    set: { value in Task { await model.setNotificationsEnabled(value) } }
+                )
+            )
             .toggleStyle(.switch).controlSize(.small)
             if model.notificationAuthorization != .authorized {
                 Text(model.notificationAuthorizationSummary).font(.caption).foregroundStyle(.secondary)

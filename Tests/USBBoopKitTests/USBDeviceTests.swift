@@ -1,5 +1,6 @@
-@testable import USBBoopKit
 import XCTest
+
+@testable import USBBoopKit
 
 final class USBDeviceTests: XCTestCase {
     func testNotificationBodyIncludesConnectionAndLinkSpeed() {

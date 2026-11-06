@@ -97,7 +97,7 @@ connection time.
 Requires Xcode 16+ and Apple Silicon.
 
 ```sh
-brew install xcodegen swiftlint
+brew install xcodegen
 xcodegen generate
 open usb-boop.xcodeproj
 ```
@@ -105,7 +105,7 @@ open usb-boop.xcodeproj
 Run tests and lint from the command line:
 
 ```sh
-swiftlint --strict
+swift format lint --strict --recursive Sources Tests
 xcodegen generate
 xcodebuild -project usb-boop.xcodeproj -scheme usb-boop \
   -destination 'platform=macOS,arch=arm64' \

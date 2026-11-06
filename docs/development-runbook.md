@@ -62,7 +62,7 @@ If Xcode is installed outside the default location, set `DEVELOPER_DIR` to its
 ```sh
 xcodebuild -version
 xcodegen generate
-swiftlint lint --strict
+swift format lint --strict --recursive Sources Tests
 xcodebuild -project usb-boop.xcodeproj -scheme usb-boop \
   -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO test
 ```
@@ -438,7 +438,7 @@ Validation:
 
 ```sh
 xcodegen generate
-swiftlint lint --strict
+swift format lint --strict --recursive Sources Tests
 xcodebuild -project usb-boop.xcodeproj -scheme usb-boop \
   -destination 'platform=macOS,arch=arm64' CODE_SIGNING_ALLOWED=NO test
 ```

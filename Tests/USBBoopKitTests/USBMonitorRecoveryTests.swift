@@ -1,5 +1,6 @@
-@testable import USBBoopKit
 import XCTest
+
+@testable import USBBoopKit
 
 @MainActor
 final class USBMonitorRecoveryTests: XCTestCase {

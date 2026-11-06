@@ -1,5 +1,6 @@
-@testable import USBBoopKit
 import XCTest
+
+@testable import USBBoopKit
 
 final class USBDeviceExtendedTests: XCTestCase {
 
@@ -86,7 +87,8 @@ final class USBDeviceExtendedTests: XCTestCase {
             speed: .usb2High
         )
 
-        XCTAssertNil(device.vendorProductSummary, "vendorProductSummary should be nil when vendor/product IDs are missing")
+        XCTAssertNil(
+            device.vendorProductSummary, "vendorProductSummary should be nil when vendor/product IDs are missing")
     }
 
     // MARK: - subtitle

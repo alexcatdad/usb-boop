@@ -1,12 +1,13 @@
-@testable import USBBoopKit
 import XCTest
+
+@testable import USBBoopKit
 
 @MainActor
 final class FixtureUSBMonitorTests: XCTestCase {
 
     func test_start_publishesDevices() {
         let devices = [
-            USBDevice(id: 1, name: "Test Device", speed: .usb3Gen1),
+            USBDevice(id: 1, name: "Test Device", speed: .usb3Gen1)
         ]
         let monitor = FixtureUSBMonitor(devices: devices)
 
@@ -47,7 +48,7 @@ final class FixtureUSBMonitorTests: XCTestCase {
 
     func test_refresh_publishesDevicesAgain() {
         let devices = [
-            USBDevice(id: 1, name: "D", speed: .usb2High),
+            USBDevice(id: 1, name: "D", speed: .usb2High)
         ]
         let monitor = FixtureUSBMonitor(devices: devices)
 

@@ -1,24 +1,28 @@
 import AppKit
 import MenubarKit
 import SwiftUI
-@testable import USBBoopKit
 import XCTest
+
+@testable import USBBoopKit
 
 @MainActor
 final class MenuLayoutTests: XCTestCase {
     func test_largeDeviceListRendersWithinBoundedMenu() throws {
         let devices = (0..<30).map { index in
-            USBDevice(id: UInt64(index), name: index == 0
-                      ? "A very long USB device name that should remain accessible when visually truncated"
-                      : "USB device \(index)", speed: .usb3Gen1)
+            USBDevice(
+                id: UInt64(index),
+                name: index == 0
+                    ? "A very long USB device name that should remain accessible when visually truncated"
+                    : "USB device \(index)", speed: .usb3Gen1)
         }
         let monitor = FixtureUSBMonitor(devices: devices)
         let model = AppModel(monitor: monitor)
         monitor.start()
         NSApplication.shared.appearance = NSAppearance(named: .aqua)
-        let controller = NSHostingController(rootView: MenuBarContentView(model: model)
-            .environment(\.colorScheme, .light)
-            .background(Color(nsColor: .windowBackgroundColor)))
+        let controller = NSHostingController(
+            rootView: MenuBarContentView(model: model)
+                .environment(\.colorScheme, .light)
+                .background(Color(nsColor: .windowBackgroundColor)))
         let view = controller.view
         view.appearance = NSAppearance(named: .aqua)
         let size = view.fittingSize
