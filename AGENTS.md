@@ -102,7 +102,7 @@ task check
 - Canonical host: GitHub `alexcatdad/usb-boop`.
 - Branch from `main`, PR back to `main`, squash-merge. Conventional commit
   messages (`feat:`, `fix:`, `test:`, `docs:`, `ci:`, `chore:`).
-- Required checks: `pr / leaks`, `pr / lint`, `pr / build`, `pr / deps`, `codeql`. Copilot reviews every PR.
+- Required checks: `pr / leaks`, `pr / lint`, `pr / build`, `pr / deps`, and the code-scanning rule (`codeql / <lang>` checks). Copilot reviews every PR.
 - Actions are pinned to full commit SHAs with a trailing `# vX.Y.Z` comment;
   workflows start from `permissions: {}` and check out with
   `persist-credentials: false`. Never interpolate untrusted input into `run:`;
