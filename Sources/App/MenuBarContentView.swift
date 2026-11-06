@@ -95,17 +95,32 @@ struct MenuBarContentView: View {
     }
 }
 
-/// A device as a standard MenubarKit list row: the name, a connection
-/// subtitle and the negotiated link speed. Clicking copies the device info.
+/// A device in MenubarKit's list-row style: the name and a connection
+/// subtitle, with the negotiated link speed as the row's prominent trailing
+/// value (AGENTS.md: speed is the visually prominent element). Clicking
+/// copies the device info.
 private struct DeviceRow: View {
     let device: USBDevice
     let subtitle: String
 
     var body: some View {
-        ListRowButton(device.name, subtitle: subtitle, value: device.speed.displayLabel) {
-            copyDeviceInfo()
+        Button(action: copyDeviceInfo) {
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(device.name).font(.callout).lineLimit(1)
+                    Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                Text(device.speed.displayLabel)
+                    .font(.body.weight(.semibold).monospacedDigit())
+                    .foregroundStyle(device.speed.tint)
+                    .lineLimit(1)
+            }
         }
+        .buttonStyle(ListRowButtonStyle())
         .help("Copy info for \(device.name)")
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(device.name), \(device.linkSpeedSummary), \(subtitle)")
         .accessibilityHint("Copies the device info")
         .contextMenu { Button("Copy Device Info", action: copyDeviceInfo) }
     }
@@ -113,6 +128,18 @@ private struct DeviceRow: View {
     private func copyDeviceInfo() {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(device.copyableInfo, forType: .string)
+    }
+}
+
+extension USBConnectionSpeed {
+    /// The speed tier's colour: the fastest links stand out, unknown speeds stay neutral.
+    var tint: Color {
+        switch self {
+        case .usb3Gen2x2, .usb3Gen2: .green
+        case .usb3Gen1: .blue
+        case .usb2High: .orange
+        default: .primary
+        }
     }
 }
 
