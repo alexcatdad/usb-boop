@@ -89,7 +89,7 @@ final class MenuLayoutTests: XCTestCase {
         XCTAssertEqual(info.first, "Extreme SSD")
         XCTAssertTrue(info.contains("Link speed: 10 Gbps"))
         XCTAssertTrue(info.contains("Manufacturer: SanDisk"))
-        XCTAssertEqual(MenuBarContentView.deviceListMaxHeight, 7 * MenuBarContentView.rowHeight)
+        XCTAssertEqual(MenuBarContentView.deviceListMaxHeight, 9 * MenuBarContentView.rowHeight)
         XCTAssertEqual(USBConnectionSpeed.usb3Gen2.tint, .green)
         XCTAssertEqual(USBConnectionSpeed.usb3Gen1.tint, .blue)
         XCTAssertEqual(USBConnectionSpeed.usb2High.tint, .orange)
