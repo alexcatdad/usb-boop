@@ -79,6 +79,22 @@ tasks:
         test
       - ./scripts/check_coverage.sh {{.RESULT_BUNDLE}}
 
+  screenshots:
+    desc: Render the website screenshots from fixture data into docs/screenshots (MenubarKit PanelSnapshot).
+    deps: [generate, warnings-as-errors]
+    cmds:
+      - mkdir -p docs/screenshots
+      # xcodebuild passes TEST_RUNNER_-prefixed variables to the test runner without the prefix.
+      - >-
+        TEST_RUNNER_USB_BOOP_SCREENSHOTS="$PWD/docs/screenshots"
+        xcodebuild
+        -project usb-boop.xcodeproj
+        -scheme usb-boop
+        -destination 'platform=macOS,arch=arm64'
+        -only-testing:USBBoopAppTests/ScreenshotTests
+        CODE_SIGNING_ALLOWED=NO
+        test
+
   security:
     desc: Check the sandbox, USB entitlement and Hardened Runtime invariants.
     cmds:

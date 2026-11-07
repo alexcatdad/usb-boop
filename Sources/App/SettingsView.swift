@@ -4,6 +4,8 @@ import USBBoopKit
 
 struct SettingsView: View {
     @Bindable var model: AppModel
+    /// Where the About section reads the version; tests pass a fixture bundle.
+    var bundle: Bundle = .main
 
     var body: some View {
         // The notification section stays app-specific: the model owns the
@@ -50,6 +52,7 @@ struct SettingsView: View {
                 SettingsNote("Applies to the device list and recent activity. History is cleared when usb-boop quits.")
             }
             SettingsAboutSection(
+                bundle: bundle,
                 note: "usb-boop reads USB metadata only. It never opens device files or reads or writes your media.",
                 repository: URL(string: "https://github.com/alexcatdad/usb-boop"))
         }

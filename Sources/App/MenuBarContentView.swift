@@ -6,6 +6,8 @@ import USBBoopKit
 /// grouped tiles of standard list rows, the menu section and the version footer.
 struct MenuBarContentView: View {
     @Bindable var model: AppModel
+    /// Where the version footer reads the version; tests pass a fixture bundle.
+    var bundle: Bundle = .main
 
     /// Height of one device row; the list shows up to `maxVisibleDevices`
     /// rows before it scrolls.
@@ -33,7 +35,7 @@ struct MenuBarContentView: View {
                 OpenSettingsButton()
                     .keyboardShortcut(",", modifiers: .command)
             }
-            VersionFooter()
+            VersionFooter(bundle: bundle)
         }
         .onAppear { model.becameActive() }
     }
