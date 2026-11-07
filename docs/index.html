@@ -3,345 +3,377 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>usb-boop</title>
+  <title>usb-boop: USB link speed in your menu bar</title>
+  <meta name="description" content="usb-boop is a small macOS menu bar app that shows the negotiated link speed of every USB device connected to your Mac.">
+  <meta name="color-scheme" content="light dark">
   <link rel="icon" type="image/png" href="favicon.png">
-  <meta name="description" content="A native macOS menu bar app that shows USB connection speed instantly.">
+  <link rel="apple-touch-icon" href="icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="usb-boop">
+  <meta property="og:description" content="A macOS menu bar app that shows the negotiated link speed of every USB device connected to your Mac.">
+  <meta property="og:url" content="https://alexcatdad.github.io/usb-boop/">
+  <meta property="og:image" content="https://alexcatdad.github.io/usb-boop/icon.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="Nose Boop: a ginger cat touching a teal USB-C plug with its nose">
+  <meta name="twitter:card" content="summary">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #FAFAF8;
-      --fg: #1A1A18;
-      --muted: #6B6B64;
-      --border: #E8E8E2;
-      --accent: #0E6B73;
-      --accent-hover: #0A4F55;
-      --code-bg: #F2F2EE;
-      --table-head: #F5F5F1;
+      --paper: #EEF0F3;
+      --surface: #F8F9FB;
+      --ink: #15171C;
+      --muted: #5B6270;
+      --hairline: #D4D8DF;
+      --accent: #2F7C8F;          /* plug teal #3C8FA3, deepened one step for AA text on paper */
+      --accent-fill: #2F7C8F;     /* Copy button: white text needs the deeper step for AA */
+      --on-accent: #FFFFFF;
+      --bar: rgba(36, 52, 90, 0.07);
+      --bar-edge: rgba(36, 52, 90, 0.12);
+      --bar-ink: #1B2235;
+      --glyph-filter: none;
+      --speed-green: #248A3D;
+      --speed-blue: #0068D6;
+      --speed-orange: #C45500;
+
+      --display: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --text: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      --mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+      --panel-w: 404px;           /* panel-*.png at 1x: 340pt panel + 32pt shadow margin each side */
+      --gutter: 24px;
+      --page-w: 1080px;
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #111110;
-        --fg: #E8E8E2;
-        --muted: #9A9A92;
-        --border: #2A2A26;
-        --accent: #5CC4C9;
-        --accent-hover: #7ED4D8;
-        --code-bg: #1A1A18;
-        --table-head: #1A1A18;
+        --paper: #17191E;
+        --surface: #20232A;
+        --ink: #ECEEF2;
+        --muted: #9AA1AE;
+        --hairline: #2E323B;
+        --accent: #5BB3C7;
+        --accent-fill: #5BB3C7;
+        --on-accent: #0E1A20;
+        --bar: rgba(36, 52, 90, 0.55);
+        --bar-edge: rgba(255, 255, 255, 0.08);
+        --bar-ink: #E6E9F0;
+        --glyph-filter: invert(1);
+        --speed-green: #30D158;
+        --speed-blue: #409CFF;
+        --speed-orange: #FF9F0A;
       }
     }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
     body {
-      font-family: 'DM Sans', -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--fg);
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 17px/1.55 var(--text);
       -webkit-font-smoothing: antialiased;
-      line-height: 1.6;
+      overflow-x: hidden;
     }
-    a { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
-    a:hover { color: var(--accent-hover); }
+    img { max-width: 100%; height: auto; }
+    a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+    a:hover { text-decoration-thickness: 2px; }
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
-    .skip-link {
-      position: absolute;
-      left: -9999px;
-      top: 8px;
-      background: var(--accent);
-      color: #fff;
-      padding: 8px 16px;
+    .skip {
+      position: absolute; left: 16px; top: -48px; z-index: 10;
+      background: var(--surface); color: var(--ink); padding: 8px 12px; border-radius: 6px;
+    }
+    .skip:focus { top: 36px; }
+
+    h1, h2 { font-family: var(--display); font-weight: 650; letter-spacing: -0.02em; margin: 0; }
+    h1 { font-size: 44px; line-height: 1.08; max-width: 15ch; font-variation-settings: "opsz" 72; }
+    h2 { font-size: 28px; line-height: 1.2; margin-bottom: 14px; font-variation-settings: "opsz" 36; }
+    p { margin: 0 0 1em; }
+    code, kbd { font-family: var(--mono); font-size: 0.88em; }
+
+    .wrap { max-width: var(--page-w); margin: 0 auto; padding: 0 var(--gutter); }
+
+    /* ---------- The menu bar ---------- */
+    .menubar {
+      position: relative; z-index: 2;
+      height: 26px;
+      background: var(--bar);
+      border-bottom: 1px solid var(--bar-edge);
+      -webkit-backdrop-filter: saturate(160%) blur(20px);
+      backdrop-filter: saturate(160%) blur(20px);
+      color: var(--bar-ink);
+      font: 13px/26px var(--text);
+    }
+    .menubar .wrap {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) var(--panel-w);
+      column-gap: 48px;
+      height: 100%;
+    }
+    .menubar .app { font-weight: 700; white-space: nowrap; }
+    .menubar .status {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      height: 100%;
+    }
+    .menubar .others { grid-column: 1; display: flex; justify-content: flex-end; gap: 14px; padding-right: 12px; }
+    .menubar .others svg { display: block; width: 16px; height: 16px; opacity: 0.85; }
+    .menubar .clock { grid-column: 3; padding-left: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .menubar .selected {
+      grid-column: 2;
+      display: grid; place-items: center;
+      width: 34px; height: 22px;
       border-radius: 6px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      text-decoration: none;
-      z-index: 100;
+      background: color-mix(in srgb, var(--accent-fill) 32%, transparent);
     }
-    .skip-link:focus { left: 16px; }
+    .menubar .selected img { width: 18px; height: 18px; filter: var(--glyph-filter); }
 
-    /* Nav */
-    nav {
-      max-width: 680px;
-      margin: 0 auto;
-      padding: 28px 24px 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    /* ---------- Hero ---------- */
+    .hero .wrap {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) var(--panel-w);
+      column-gap: 48px;
+      align-items: start;
     }
-    nav .logo {
-      font-family: 'Instrument Serif', Georgia, serif;
-      font-size: 1.15rem;
-      color: var(--fg);
-      letter-spacing: -0.01em;
+    .hero .panel {
+      grid-column: 2; grid-row: 1;
+      margin: 0;
+      /* The PNG carries a 32pt transparent shadow margin; pull the card up to hang under the bar. */
+      margin-top: calc(-32 / 404 * 100% + 4px);
     }
-    nav .gh-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: var(--muted);
-      text-decoration: none;
-      transition: color 0.15s;
-    }
-    nav .gh-link:hover { color: var(--fg); text-decoration: underline; }
-    nav .gh-link svg { width: 18px; height: 18px; fill: currentColor; }
-
-    /* Hero */
-    .hero {
-      max-width: 680px;
-      margin: 0 auto;
-      padding: 80px 24px 64px;
-    }
-    .hero-top {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      margin-bottom: 32px;
-    }
-    .hero-icon {
-      width: 72px;
-      height: 72px;
-      border-radius: 16px;
-      flex-shrink: 0;
-    }
-    h1 {
-      font-family: 'Instrument Serif', Georgia, serif;
-      font-size: 2.75rem;
-      font-weight: 400;
-      letter-spacing: -0.03em;
-      line-height: 1.1;
-    }
-    .hero p {
-      font-size: 1.125rem;
-      color: var(--muted);
-      max-width: 480px;
-      line-height: 1.65;
+    .hero .panel img { display: block; width: 100%; }
+    .hero .intro { grid-column: 1; grid-row: 1; padding-top: 72px; }
+    .hero .lede { color: var(--muted); max-width: 46ch; margin: 18px 0 28px; font-size: 19px; line-height: 1.5; }
+    @media (prefers-reduced-motion: no-preference) {
+      .hero .panel { animation: drop 420ms cubic-bezier(.2, .7, .2, 1) 120ms both; }
+      @keyframes drop { from { opacity: 0; transform: translateY(-8px); } }
     }
 
-    /* Install */
     .install {
-      max-width: 680px;
-      margin: 0 auto;
-      padding: 0 24px 64px;
-    }
-    .install-box {
-      background: var(--code-bg);
-      border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+      max-width: 520px;
+      padding: 6px 6px 6px 16px;
+      background: var(--surface);
+      border: 1px solid var(--hairline);
       border-radius: 10px;
-      padding: 20px 24px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      line-height: 2;
-      overflow-x: auto;
     }
-    .install-box .comment { color: var(--muted); }
-    .install-cta {
-      margin-top: 16px;
-      display: flex;
-      gap: 20px;
-      align-items: center;
-      font-size: 0.875rem;
+    .install code {
+      flex: 1; min-width: 0;
+      overflow-x: auto; white-space: nowrap;
+      font-size: 15px; padding: 6px 0;
+      scrollbar-width: none;
     }
-    .install-cta a { font-weight: 500; }
+    .install code::-webkit-scrollbar { display: none; }
+    .copy {
+      flex: none;
+      font: 600 14px/1 var(--text);
+      color: var(--on-accent);
+      background: var(--accent-fill);
+      border: 0; border-radius: 7px;
+      padding: 9px 14px;
+      cursor: pointer;
+      min-width: 74px;
+    }
+    .copy:hover { filter: brightness(1.06); }
+    .install-note { margin: 12px 0 0; font-size: 15px; color: var(--muted); }
 
-    /* Section */
-    section {
-      max-width: 680px;
-      margin: 0 auto;
-      padding: 0 24px 64px;
-    }
-    h2 {
-      font-family: 'Instrument Serif', Georgia, serif;
-      font-size: 1.75rem;
-      font-weight: 400;
-      letter-spacing: -0.02em;
-      margin-bottom: 20px;
-    }
-    section p {
-      color: var(--muted);
-      margin-bottom: 12px;
-      line-height: 1.7;
-    }
-    section p:last-child { margin-bottom: 0; }
+    /* ---------- Below the hero ---------- */
+    main section { margin-top: 88px; }
+    .col { max-width: 68ch; }
+    .col p { max-width: 68ch; }
+    hr.rule { border: 0; border-top: 1px solid var(--hairline); margin: 88px 0 0; }
 
-    /* Divider */
-    hr {
-      max-width: 680px;
-      margin: 0 auto 64px;
-      padding: 0 24px;
-      border: none;
-      border-top: 1px solid var(--border);
-    }
+    figure.shot { margin: 28px 0 0; }
+    figure.shot img { display: block; }
+    figure.shot.settings img { width: 440px; }
+    figure.shot figcaption { font-size: 15px; color: var(--muted); margin-top: 4px; max-width: 60ch; }
 
-    /* Speed table */
-    .speed-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.875rem;
+    .speeds { list-style: none; padding: 0; margin: 4px 0 20px; }
+    .speeds li {
+      display: grid; grid-template-columns: 5.5em minmax(0, 1fr); gap: 16px;
+      padding: 10px 0; border-top: 1px solid var(--hairline);
     }
-    .speed-table th {
-      text-align: left;
-      padding: 10px 0;
-      font-weight: 600;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      border-bottom: 1px solid var(--border);
-    }
-    .speed-table td {
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .speed-table tr:last-child td { border-bottom: none; }
-    .speed-table td:nth-child(2) {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: var(--accent);
-    }
-    .speed-table td:nth-child(3) {
-      color: var(--muted);
+    .speeds li:last-child { border-bottom: 1px solid var(--hairline); }
+    .speeds b { font-weight: 650; font-variant-numeric: tabular-nums; }
+    .speeds .g { color: var(--speed-green); }
+    .speeds .b { color: var(--speed-blue); }
+    .speeds .o { color: var(--speed-orange); }
+    .speeds .n { color: var(--ink); }
+
+    ol.steps { padding-left: 1.4em; margin: 0 0 1em; }
+    ol.steps li { margin-bottom: 10px; padding-left: 4px; }
+    pre.cmd {
+      font-family: var(--mono); font-size: 15px;
+      background: var(--surface); border: 1px solid var(--hairline); border-radius: 8px;
+      padding: 10px 14px; margin: 8px 0 0; overflow-x: auto;
     }
 
-    /* Requirements */
-    .reqs {
-      display: flex;
-      gap: 40px;
-      flex-wrap: wrap;
-      font-size: 0.875rem;
-    }
-    .reqs dt {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-      margin-bottom: 2px;
-    }
-    .reqs dd { font-weight: 500; }
+    ul.plain { padding-left: 1.2em; margin: 0; }
+    ul.plain li { margin-bottom: 8px; }
 
-    /* Footer */
-    footer {
-      max-width: 680px;
-      margin: 0 auto;
-      padding: 32px 24px 48px;
-      border-top: 1px solid var(--border);
-      font-size: 0.8rem;
-      color: var(--muted);
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 8px;
+    /* ---------- Footer ---------- */
+    footer { margin-top: 96px; padding: 40px 0 56px; border-top: 1px solid var(--hairline); font-size: 15px; }
+    footer .family { list-style: none; padding: 0; margin: 0 0 32px; display: grid; gap: 16px; max-width: 68ch; }
+    footer .family a { display: grid; grid-template-columns: 36px 1fr; column-gap: 14px; align-items: center; text-decoration: none; color: var(--ink); }
+    footer .family img { width: 36px; height: 36px; border-radius: 9px; grid-row: span 2; box-shadow: 0 0 0 1px var(--hairline); }
+    footer .family strong { font-weight: 600; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+    footer .family a:hover strong { text-decoration-thickness: 2px; }
+    footer .family span { color: var(--muted); }
+    footer .meta { color: var(--muted); margin: 0; display: flex; align-items: center; gap: 12px; }
+    footer .meta img { flex: none; }
+    footer .meta img { width: 28px; height: 28px; }
+
+    /* ---------- Narrow screens ---------- */
+    @media (max-width: 820px) {
+      :root { --gutter: 16px; }
+      .menubar .wrap { grid-template-columns: minmax(0, 1fr); position: relative; }
+      .menubar .app { position: absolute; left: var(--gutter); top: 0; }
+      .menubar .others { display: none; }
+      .hero .wrap { grid-template-columns: minmax(0, 1fr); }
+      .hero .panel { grid-column: 1; grid-row: 1; max-width: var(--panel-w); width: 100%; justify-self: center;
+        margin-top: calc(-32 / 404 * min(100vw - 2 * var(--gutter), var(--panel-w)) + 4px); }
+      .hero .intro { grid-row: 2; padding-top: 24px; }
+      h1 { font-size: 36px; }
+      .hero .lede { font-size: 17px; }
+      main section { margin-top: 64px; }
+      hr.rule { margin-top: 64px; }
     }
-    footer a { color: var(--muted); text-decoration-color: var(--border); }
-    footer a:hover { color: var(--fg); text-decoration-color: currentColor; }
+    @media (max-width: 520px) {
+      .install code { white-space: normal; overflow-wrap: anywhere; font-size: 14px; }
+    }
+    @media (max-width: 400px) {
+      .menubar .clock .day { display: none; }
+      h1 { font-size: 32px; }
+    }
   </style>
 </head>
 <body>
+  <a class="skip" href="#main">Skip to content</a>
 
-  <a href="#main" class="skip-link">Skip to content</a>
-
-  <nav aria-label="Site">
-    <span class="logo">usb-boop</span>
-    <a href="https://github.com/alexcatdad/usb-boop" class="gh-link">
-      <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-      GitHub
-    </a>
-  </nav>
+  <header class="menubar" aria-hidden="true">
+    <div class="wrap">
+      <span class="app">usb-boop</span>
+      <div class="status">
+        <span class="others">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="5.6"/><path d="M8 2.4a5.6 5.6 0 0 1 0 11.2z" fill="currentColor" stroke="none"/></svg>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2.5 6.5a8 8 0 0 1 11 0"/><path d="M4.6 8.9a5 5 0 0 1 6.8 0"/><circle cx="8" cy="11.6" r="1" fill="currentColor" stroke="none"/></svg>
+        </span>
+        <span class="selected"><img src="tray.png" width="18" height="18" alt=""></span>
+        <span class="clock"><span class="day">Sat 7 Nov&nbsp;</span>09:41</span>
+      </div>
+    </div>
+  </header>
 
   <main id="main">
-  <div class="hero">
-    <div class="hero-top">
-      <img src="icon.png" alt="Nose Boop: a ginger cat touching a teal USB-C plug with its nose" width="72" height="72" class="hero-icon">
-      <h1>Know your USB<br>speed instantly</h1>
-    </div>
-    <p>
-      A native macOS menu bar utility that detects USB devices the moment
-      they connect and tells you the negotiated link speed. No digging
-      through System Information.
-    </p>
-  </div>
-
-  <div class="install">
-    <div class="install-box">
-      <span class="comment"># install via Homebrew</span><br>
-      brew install --cask alexcatdad/tap/usb-boop
-    </div>
-    <div class="install-cta">
-      <a href="https://github.com/alexcatdad/usb-boop/releases/latest/download/usb-boop-macos-arm64.dmg">Download DMG</a>
-      <span style="color:var(--border)">|</span>
-      <span style="color:var(--muted)">macOS 14+ &middot; Apple Silicon</span>
-    </div>
-  </div>
-
-  <hr>
-
-  <section>
-    <h2>How it works</h2>
-    <p>
-      usb-boop registers for IOKit attach events and surfaces device name plus
-      negotiated speed as a native macOS notification in under a second.
-      It lives in the menu bar with zero dock presence. Click the icon to see
-      every connected USB device and its current link speed.
-    </p>
-    <p>
-      Perfect for quickly testing whether a cable, hub, or port actually
-      delivers the speed you expect. Swap and compare in seconds.
-    </p>
-    <p>
-      Meet Nose Boop, our ginger cat mascot. The cat boops the connection;
-      usb-boop reports its link speed. A little curiosity, inspired by cats
-      who can't leave cables alone.
-    </p>
-    <p>
-      Fully offline, local-only. No analytics, no network calls, no data
-      leaves your Mac.
-    </p>
-  </section>
-
-  <section>
-    <h2>Recognized speeds</h2>
-    <table class="speed-table">
-      <thead>
-        <tr><th scope="col">Standard</th><th scope="col">Speed</th><th scope="col">Label</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>USB 1.0</td><td>1.5 Mbps</td><td>Low Speed</td></tr>
-        <tr><td>USB 1.1</td><td>12 Mbps</td><td>Full Speed</td></tr>
-        <tr><td>USB 2.0</td><td>480 Mbps</td><td>High Speed</td></tr>
-        <tr><td>USB 3.0 / 3.1 Gen 1</td><td>5 Gbps</td><td>SuperSpeed</td></tr>
-        <tr><td>USB 3.1 Gen 2</td><td>10 Gbps</td><td>SuperSpeed+</td></tr>
-        <tr><td>USB 3.2 Gen 2x2</td><td>20 Gbps</td><td>SuperSpeed 20G</td></tr>
-      </tbody>
-    </table>
-  </section>
-
-  <section>
-    <h2>Requirements</h2>
-    <dl class="reqs">
-      <div>
-        <dt>Platform</dt>
-        <dd>macOS 14 Sonoma+</dd>
+    <div class="hero">
+      <div class="wrap">
+        <figure class="panel">
+          <picture>
+            <source srcset="screenshots/panel-dark.png" media="(prefers-color-scheme: dark)">
+            <img src="screenshots/panel-light.png" width="404" height="374" fetchpriority="high"
+              alt="The usb-boop panel: Monitoring USB, 4 devices connected. Portable SSD at 10 Gbps in green, 2.5 Gigabit Ethernet Adapter at 5 Gbps in blue, USB Audio Interface at 480 Mbps in orange, Wired Keyboard at 12 Mbps in the default text colour.">
+          </picture>
+        </figure>
+        <div class="intro">
+          <h1>See the speed every USB device actually connected at.</h1>
+          <p class="lede">usb-boop sits in your Mac’s menu bar and lists each connected USB device with its negotiated link speed, so you can tell at a glance whether a cable, hub or port is holding things back.</p>
+          <div class="install">
+            <code id="install-cmd">brew install --cask alexcatdad/tap/usb-boop</code>
+            <button class="copy" type="button" data-copy="install-cmd" aria-label="Copy the install command">Copy</button>
+          </div>
+          <p class="install-note">macOS 14 or later on Apple silicon. Free and open source.</p>
+        </div>
       </div>
-      <div>
-        <dt>Architecture</dt>
-        <dd>Apple Silicon</dd>
-      </div>
-      <div>
-        <dt>License</dt>
-        <dd>MIT &mdash; free &amp; open source</dd>
-      </div>
-    </dl>
-  </section>
+    </div>
+
+    <div class="wrap">
+      <section class="col" aria-labelledby="panel-h">
+        <h2 id="panel-h">What the panel tells you</h2>
+        <p>The header says whether usb-boop is watching for devices and how many are connected. If macOS stops answering, it says so and offers to try again, instead of showing a list that may be out of date.</p>
+        <p>Each device in the list shows its name and its link speed. The speed is the rate the device and your Mac agreed on when it was plugged in. It is not a measured transfer speed: a 10 Gbps SSD still copies files more slowly than that, but a drive showing 480 Mbps is limited by the cable, hub or port before it starts.</p>
+        <ul class="speeds" aria-label="What the speed colours mean">
+          <li><b class="g">Green</b><span>10 Gbps or faster (USB 3.2 Gen 2 and Gen 2x2).</span></li>
+          <li><b class="b">Blue</b><span>5 Gbps (USB 3.2 Gen 1, once called USB 3.0).</span></li>
+          <li><b class="o">Orange</b><span>480 Mbps (USB 2.0). A fast drive or adapter showing this is worth a second cable.</span></li>
+          <li><b class="n">Plain</b><span>12 Mbps and slower, which is normal for keyboards and mice, or a speed macOS did not report.</span></li>
+        </ul>
+        <p>When something new is plugged in, it is pinned at the top as the latest connection, and the recent activity list keeps the last few connects and disconnects with their times. Click any device to copy its name, speed and identifiers.</p>
+        <figure class="shot">
+          <picture>
+            <source srcset="screenshots/panel-activity-dark.png" media="(prefers-color-scheme: dark)">
+            <img src="screenshots/panel-activity-light.png" width="404" height="564" loading="lazy"
+              alt="The usb-boop panel with a Latest connection tile showing Portable SSD, connected, at 10 Gbps, the four connected devices, and a Recent activity list: Portable SSD connected at 09:41, USB Flash Drive disconnected at 09:37, USB Audio Interface connected at 09:20.">
+          </picture>
+          <figcaption>After plugging in the SSD: it is pinned as the latest connection, and the recent activity list shows what changed.</figcaption>
+        </figure>
+      </section>
+
+      <section class="col" aria-labelledby="settings-h">
+        <h2 id="settings-h">Settings</h2>
+        <p>Connection banners are off until you turn them on; macOS asks for permission the first time. Sound is a separate switch, hubs never get a banner, and devices plugged in together share one. You can also start usb-boop at login, keep or drop the latest-connection tile, and show USB hubs in the list.</p>
+        <figure class="shot settings">
+          <picture>
+            <source srcset="screenshots/settings-dark.png" media="(prefers-color-scheme: dark)">
+            <img src="screenshots/settings-light.png" width="524" height="793" loading="lazy"
+              alt="The usb-boop Settings window: Notifications with Show quiet connection banners and Play a sound, both off; Startup with Launch at login, off; Display with Pin latest result in menu on and Show USB hubs off; About with the version and a link to GitHub.">
+          </picture>
+        </figure>
+      </section>
+
+      <section class="col" aria-labelledby="install-h">
+        <h2 id="install-h">Install</h2>
+        <ol class="steps">
+          <li>Install with Homebrew:
+            <pre class="cmd"><code>brew install --cask alexcatdad/tap/usb-boop</code></pre>
+          </li>
+          <li>Open usb-boop from Applications. Its cat-head icon appears in the menu bar; there is no Dock icon.</li>
+          <li>To get a banner when a device connects, open Settings, turn on connection banners and allow notifications when macOS asks.</li>
+        </ol>
+        <p>Requires macOS 14 Sonoma or later on Apple silicon. Releases are signed with Developer ID and notarized by Apple. Update with <code>brew upgrade --cask usb-boop</code>. If you don’t use Homebrew, download the ZIP from the <a href="https://github.com/alexcatdad/usb-boop/releases/latest">latest release</a> and move usb-boop into Applications.</p>
+      </section>
+
+      <section class="col" aria-labelledby="privacy-h">
+        <h2 id="privacy-h">What it never does</h2>
+        <ul class="plain">
+          <li>It reads USB device information that macOS already keeps. It never mounts volumes, opens device files, or reads or writes anything on your drives.</li>
+          <li>It makes no network connections: no analytics, telemetry or update checks.</li>
+          <li>It runs in the macOS App Sandbox with access to USB devices only.</li>
+          <li>Connection history stays in memory and is gone when you quit.</li>
+        </ul>
+      </section>
+    </div>
   </main>
 
-  <footer>
-    <span>Made by <a href="https://github.com/alexcatdad">alexcatdad</a></span>
-    <span>
-      <a href="https://github.com/alexcatdad/usb-boop">Source</a> &middot;
-      <a href="https://github.com/alexcatdad/usb-boop/releases">Releases</a>
-    </span>
-  </footer>
+  <div class="wrap">
+      <footer>
+        <ul class="family" aria-label="Other menu bar apps by alexcatdad">
+          <li><a href="https://alexcatdad.github.io/pr-nanny/"><img src="https://alexcatdad.github.io/pr-nanny/icon.png" width="36" height="36" alt="" loading="lazy"><strong>PR Nanny</strong><span>Watches your GitHub pull requests.</span></a></li>
+          <li><a href="https://alexcatdad.github.io/paw-proxy/"><img src="https://alexcatdad.github.io/paw-proxy/apple-touch-icon.png" width="36" height="36" alt="" loading="lazy"><strong>Paw Proxy</strong><span>Local HTTPS for dev servers.</span></a></li>
+        </ul>
+        <p class="meta">
+          <img src="icon.png" width="28" height="28" alt="Nose Boop, the usb-boop icon: a ginger cat touching a teal USB-C plug with its nose">
+          <span>usb-boop is MIT licensed. <a href="https://github.com/alexcatdad/usb-boop">Source on GitHub</a>.</span>
+        </p>
+      </footer>
+  </div>
 
+  <script>
+    document.querySelectorAll("[data-copy]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        var text = document.getElementById(button.dataset.copy).textContent;
+        var done = function (label) {
+          button.textContent = label;
+          setTimeout(function () { button.textContent = "Copy"; }, 1600);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () { done("Copied"); }, function () { done("Select it"); });
+        } else {
+          done("Select it");
+        }
+      });
+    });
+  </script>
 </body>
 </html>

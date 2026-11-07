@@ -36,6 +36,7 @@
 		7EFE07FD034C804FB36B94D0 /* NotificationLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E7A2E0AA708C1B590DF5F76 /* NotificationLifecycleTests.swift */; };
 		8268505676007C9F08CE45EF /* USBBoopKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F87B1CD107B298956A80FC80 /* USBBoopKit.framework */; };
 		96E17E54097AC215E34C304A /* USBBoopKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = F87B1CD107B298956A80FC80 /* USBBoopKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		A31002096608A80FE0FC4E77 /* ScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B98D36DF908A50707D4BDC2C /* ScreenshotTests.swift */; };
 		A99AEDF3922C2A49AD1213E4 /* MockNotificationCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FD3ECD084791634A299C928 /* MockNotificationCenter.swift */; };
 		AAE5797E8AEEF9159ECAEB51 /* NotificationAuthorizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D447A8B100368B34EA02105 /* NotificationAuthorizationTests.swift */; };
 		ABCBEF382C406E676C24AD15 /* FixtureUSBMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 459FDBB6D54D4D672318E318 /* FixtureUSBMonitorTests.swift */; };
@@ -166,6 +167,7 @@
 		AA659B96F66B77BF451E2D35 /* FixtureUSBMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureUSBMonitor.swift; sourceTree = "<group>"; };
 		B142599F5B74A70435C1444A /* IOKitUSBMonitorLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOKitUSBMonitorLogicTests.swift; sourceTree = "<group>"; };
 		B1CB5CD4057F2C5FA17C125E /* USBRegistryDeviceReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBRegistryDeviceReaderTests.swift; sourceTree = "<group>"; };
+		B98D36DF908A50707D4BDC2C /* ScreenshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotTests.swift; sourceTree = "<group>"; };
 		BACEDE44CD013FE33736D8FA /* USBDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBDevice.swift; sourceTree = "<group>"; };
 		C22E788D876A45A52A16F360 /* LoginItemControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemControllerTests.swift; sourceTree = "<group>"; };
 		CCD145F33A162AF88A98BA3F /* USBConnectionSpeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBConnectionSpeed.swift; sourceTree = "<group>"; };
@@ -294,6 +296,7 @@
 				423E8143CDBA6FBE88F50D4A /* MonitoringPresentationTests.swift */,
 				2D447A8B100368B34EA02105 /* NotificationAuthorizationTests.swift */,
 				7E7A2E0AA708C1B590DF5F76 /* NotificationLifecycleTests.swift */,
+				B98D36DF908A50707D4BDC2C /* ScreenshotTests.swift */,
 			);
 			path = USBBoopAppTests;
 			sourceTree = "<group>";
@@ -513,6 +516,7 @@
 				D99E7111E9D72261A43E9934 /* MonitoringPresentationTests.swift in Sources */,
 				AAE5797E8AEEF9159ECAEB51 /* NotificationAuthorizationTests.swift in Sources */,
 				7EFE07FD034C804FB36B94D0 /* NotificationLifecycleTests.swift in Sources */,
+				A31002096608A80FE0FC4E77 /* ScreenshotTests.swift in Sources */,
 				D5CC4BAB393F59B934095AC9 /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -898,7 +902,7 @@
 			repositoryURL = "https://github.com/alexcatdad/menubar-kit.git";
 			requirement = {
 				kind = revision;
-				revision = 4027df8aaafd84a9c3dc46571477c76b5d74921d;
+				revision = cf3666e8e1a822930c7f4c3f64309de5951b1c54;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

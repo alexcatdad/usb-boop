@@ -16,6 +16,13 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/alexcatdad/usb-boop?style=flat-square" alt="MIT License"></a>
 </p>
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/panel-dark.png">
+    <img src="docs/screenshots/panel-light.png" width="404" alt="The usb-boop panel listing four connected devices: Portable SSD at 10 Gbps in green, 2.5 Gigabit Ethernet Adapter at 5 Gbps in blue, USB Audio Interface at 480 Mbps in orange, Wired Keyboard at 12 Mbps">
+  </picture>
+</p>
+
 ---
 
 ## Why
@@ -61,9 +68,9 @@ attestation. See the [release guide](docs/release-automation.md).
 - Lives in the menu bar with zero dock presence
 - Detects USB device connections in real time via IOKit
 - Offers quiet connection banners, with optional sound and grouped device connections
-- Displays all currently connected USB devices in a companion window
-- Color-coded speed display (green for USB 3.1/3.2, blue for USB 3.0, orange for USB 2.0)
-- Right-click any device to copy its info
+- Lists every connected USB device in the menu bar panel, with the latest connection pinned and recent connects and disconnects
+- Color-coded speed display (green for 10 Gbps and faster, blue for 5 Gbps, orange for 480 Mbps, plain for slower or unknown)
+- Click or right-click any device to copy its info
 - Persists notification and display preferences; requests notification permission only when enabled
 - Keeps the last 50 connection observations in memory for the current session
 - Offers optional launch at login, with macOS approval status shown in Settings
@@ -76,7 +83,7 @@ files, or reads/writes media contents. Read-only or inaccessible storage can
 still expose USB metadata. Missing speed information stays unknown; it does
 not mean the device or cable is faulty.
 
-Monitoring failures appear in the menu with an explicit Retry action. Previously
+Monitoring failures appear in the menu with an explicit Try Again action. Previously
 observed information is labelled when it may be stale or incomplete. Devices
 already present at launch show when they were first seen, not an invented
 connection time.
@@ -94,7 +101,7 @@ connection time.
 
 ## Build from source
 
-Requires Xcode 16+ and Apple Silicon.
+Requires Xcode 26 or later and Apple Silicon.
 
 ```sh
 brew install xcodegen
@@ -110,6 +117,13 @@ xcodegen generate
 xcodebuild -project usb-boop.xcodeproj -scheme usb-boop \
   -destination 'platform=macOS,arch=arm64' \
   CODE_SIGNING_ALLOWED=NO test
+```
+
+Regenerate the website and README screenshots from fixture data (no real
+devices, rendered offscreen with MenubarKit's `PanelSnapshot`):
+
+```sh
+task screenshots   # writes docs/screenshots/*.png
 ```
 
 Debug builds use `usb-boop-dev` and a separate bundle identifier, so preferences,
@@ -140,9 +154,8 @@ Tests/
 
 ## Release model
 
-Versions are `YYYY.M.N` (UTC year and month without leading zeros, then a
-per-month counter from 1; tag `vYYYY.M.N`). Earlier `YYYY.MM.DD.N` tags stay as
-history. Releases are made only by an explicit local run on the maintainer's
+Versions are CalVer `YYYY.MM.DD.N` (UTC date, then a per-day counter from 1;
+tag `vYYYY.MM.DD.N`). Releases are made only by an explicit local run on the maintainer's
 Mac, using [release-tools](https://github.com/alexcatdad/release-tools) through
 Go Task:
 
