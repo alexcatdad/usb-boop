@@ -173,3 +173,5 @@ releases. See the [release guide](docs/release-automation.md).
 ## License
 
 [MIT](LICENSE)
+
+<!-- docs-only CI test -->
